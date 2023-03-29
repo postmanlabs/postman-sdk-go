@@ -4,13 +4,20 @@ import (
 	"context"
 	"log"
 
+	pminterfaces "github.com/postmanlabs/postmansdk/interfaces"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-func Initialize(serviceName string) func(context.Context) error {
+func Initialize(
+	apiKey string,
+	collectionId string,
+	options ...pminterfaces.PostmanSDKConfigOption) func(context.Context) error {
+
+	sdkconfig := pminterfaces.Init(apiKey, collectionId, options...)
+	log.Printf("SdkConfig is intialized as %v", sdkconfig)
 
 	// Adding a stdout exporter
 	exporter, err := newExporter()
@@ -21,7 +28,6 @@ func Initialize(serviceName string) func(context.Context) error {
 	resources, err := resource.New(
 		context.Background(),
 		resource.WithAttributes(
-			attribute.String("service.name", serviceName),
 			attribute.String("library.language", "go"),
 		),
 	)
@@ -32,7 +38,7 @@ func Initialize(serviceName string) func(context.Context) error {
 	otel.SetTracerProvider(
 		sdktrace.NewTracerProvider(
 			sdktrace.WithSampler(sdktrace.AlwaysSample()),
-			sdktrace.WithBatcher(exporter),
+			sdktrace.WithBatcher(exporter, sdktrace.WithBatchTimeout(sdkconfig.ConfigOptions.BufferIntervalInMilliseconds)),
 			sdktrace.WithResource(resources),
 		),
 	)
