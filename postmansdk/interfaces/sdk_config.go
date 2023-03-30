@@ -1,7 +1,6 @@
 package interfaces
 
 import (
-	"log"
 	"time"
 )
 
@@ -32,7 +31,7 @@ type postmanSDKConfig struct {
 	ConfigOptions PostmanSDKConfigOptions
 }
 
-func Init(apiKey, collectionId string, options ...PostmanSDKConfigOption) postmanSDKConfig {
+func Init(collectionId string, apiKey string, options ...PostmanSDKConfigOption) postmanSDKConfig {
 
 	o := PostmanSDKConfigOptions{
 		BufferIntervalInMilliseconds: DefaultBufferIntervalInMilliseconds * time.Millisecond,
@@ -49,7 +48,6 @@ func Init(apiKey, collectionId string, options ...PostmanSDKConfigOption) postma
 		CollectionId:  collectionId,
 		ConfigOptions: o,
 	}
-	log.Printf("Sdk Config created %v", sdkconfig)
 	return *sdkconfig
 }
 

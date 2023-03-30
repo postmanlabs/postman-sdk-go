@@ -12,11 +12,12 @@ import (
 )
 
 func Initialize(
-	apiKey string,
 	collectionId string,
-	options ...pminterfaces.PostmanSDKConfigOption) func(context.Context) error {
+	apiKey string,
+	options ...pminterfaces.PostmanSDKConfigOption,
+	) func(context.Context) error {
 
-	sdkconfig := pminterfaces.Init(apiKey, collectionId, options...)
+	sdkconfig := pminterfaces.Init(collectionId, apiKey, options...)
 	log.Printf("SdkConfig is intialized as %v", sdkconfig)
 
 	// Adding a stdout exporter
@@ -42,5 +43,6 @@ func Initialize(
 			sdktrace.WithResource(resources),
 		),
 	)
+
 	return exporter.Shutdown
 }
