@@ -72,7 +72,7 @@ func Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		currentSpan := trace.SpanFromContext(c.Request.Context())
 
-		// isRecrding will handle the case of:
+		// isRecording will handle the case of:
 		//	- currentSpan being a noopSpan -> As a noopSpan's isRecording will always return false.
 		//	- span is closed for writing.
 		if !currentSpan.IsRecording() {
