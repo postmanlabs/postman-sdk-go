@@ -2,8 +2,6 @@ package instrumentations_gin
 
 import (
 	"bytes"
-	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 
@@ -12,35 +10,27 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func jsonStringify(v any) string {
-	b, err := json.Marshal(v)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	return string(b)
-}
-
-type bodyLogWriter struct {
-	gin.ResponseWriter
-	body *bytes.Buffer
-}
-
-func (w bodyLogWriter) Write(b []byte) (int, error) {
-	w.body.Write(b)
-	return w.ResponseWriter.Write(b)
-}
-
 func getRequestHeaders(c *gin.Context) string {
-	return jsonStringify(c.Request.Header)
+	return jsonStringify(arrayToValue(c.Request.Header))
 }
 
 func getRequestParams(c *gin.Context) string {
-	return jsonStringify(c.Params)
+	if c.Params == nil {
+		return jsonStringify(map[string]string{})
+	}
+
+	// Convert from [{Key: "<key>", Value: "<value>"}] -> {<key>: <value>}
+	paramObject := make(map[string]string, len(c.Params))
+
+	for _, p := range c.Params {
+		paramObject[p.Key] = p.Value
+	}
+
+	return jsonStringify(paramObject)
 }
 
 func getRequestQuery(c *gin.Context) string {
-	return jsonStringify(c.Request.URL.Query())
+	return jsonStringify(arrayToValue(c.Request.URL.Query()))
 }
 
 func getRequestBody(c *gin.Context) string {
@@ -52,11 +42,15 @@ func getRequestBody(c *gin.Context) string {
 
 	c.Request.Body = io.NopCloser(bytes.NewBuffer(data))
 
+	if string(data) == "" {
+		return jsonStringify(map[string]string{})
+	}
+
 	return string(data)
 }
 
 func getResponseHeaders(c *gin.Context) string {
-	return jsonStringify(c.Writer.Header())
+	return jsonStringify(arrayToValue(c.Writer.Header()))
 }
 
 func getResponseBody(c *gin.Context) *bodyLogWriter {
@@ -70,6 +64,13 @@ func getResponseBody(c *gin.Context) *bodyLogWriter {
 func Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		currentSpan := trace.SpanFromContext(c.Request.Context())
+
+		if !currentSpan.IsRecording() {
+			// Call the next middleware, and bailout
+			c.Next()
+
+			return
+		}
 
 		reqBody := getRequestBody(c)
 		blw := getResponseBody(c)
