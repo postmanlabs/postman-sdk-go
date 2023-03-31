@@ -4,21 +4,30 @@ import (
 	"context"
 	"log"
 
+	"github.com/gin-gonic/gin"
+	instrumentations_gin "github.com/postmanlabs/postmansdk/instrumentations/gin"
 	pminterfaces "github.com/postmanlabs/postmansdk/interfaces"
+	"github.com/postmanlabs/postmansdk/utils"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
+var globalCollectionId string
+
 func Initialize(
 	collectionId string,
 	apiKey string,
 	options ...pminterfaces.PostmanSDKConfigOption,
-	) func(context.Context) error {
+) func(context.Context) error {
 
 	sdkconfig := pminterfaces.Init(collectionId, apiKey, options...)
 	log.Printf("SdkConfig is intialized as %v", sdkconfig)
+
+	// Adding collectionId to global var
+	globalCollectionId = collectionId
 
 	// Adding a stdout exporter
 	exporter, err := newExporter()
@@ -30,6 +39,7 @@ func Initialize(
 		context.Background(),
 		resource.WithAttributes(
 			attribute.String("library.language", "go"),
+			attribute.String(utils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME, collectionId),
 		),
 	)
 	if err != nil {
@@ -45,4 +55,9 @@ func Initialize(
 	)
 
 	return exporter.Shutdown
+}
+
+func InstrumentGin(router *gin.Engine) {
+	router.Use(otelgin.Middleware(globalCollectionId))
+	router.Use(instrumentations_gin.Middleware())
 }
