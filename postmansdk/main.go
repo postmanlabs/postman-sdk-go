@@ -17,6 +17,9 @@ import (
 
 var globalCollectionId string
 
+// This implementation will be replaced by something else that @gmann42 will add to save state.
+var ignoreIncomingRequests []string
+
 func Initialize(
 	collectionId string,
 	apiKey string,
@@ -28,6 +31,8 @@ func Initialize(
 
 	// Adding collectionId to global var
 	globalCollectionId = collectionId
+	// Remove this from here.
+	ignoreIncomingRequests = sdkconfig.ConfigOptions.IgnoreIncomingRequests
 
 	// Adding a stdout exporter
 	exporter, err := newExporter()
@@ -58,6 +63,6 @@ func Initialize(
 }
 
 func InstrumentGin(router *gin.Engine) {
-	router.Use(otelgin.Middleware(globalCollectionId))
+	router.Use(otelgin.Middleware(globalCollectionId, getMiddlewareOptions()...))
 	router.Use(instrumentations_gin.Middleware())
 }
