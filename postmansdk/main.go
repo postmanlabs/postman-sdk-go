@@ -29,6 +29,13 @@ func Initialize(
 	sdkconfig := pminterfaces.Init(collectionId, apiKey, options...)
 	log.Printf("SdkConfig is intialized as %v", sdkconfig)
 
+	// Check if the sdk should be enabled or not
+	if !sdkconfig.ConfigOptions.Enable {
+		return func(ctx context.Context) error {
+			return nil
+		}
+	}
+
 	// Adding collectionId to global var
 	globalCollectionId = collectionId
 	// Remove this from here.
