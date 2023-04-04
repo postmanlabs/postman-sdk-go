@@ -1,4 +1,4 @@
-module github.com/postmanlabs/postmansdk
+module github.com/postmanlabs/postman-go-sdk
 
 go 1.20
 

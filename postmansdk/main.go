@@ -16,10 +16,10 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
-	pmexporter "github.com/postmanlabs/postmansdk/exporter"
-	instrumentations_gin "github.com/postmanlabs/postmansdk/instrumentations/gin"
-	pminterfaces "github.com/postmanlabs/postmansdk/interfaces"
-	pmutils "github.com/postmanlabs/postmansdk/utils"
+	pmexporter "github.com/postmanlabs/postman-go-sdk/postmansdk/exporter"
+	instrumentations_gin "github.com/postmanlabs/postman-go-sdk/postmansdk/instrumentations/gin"
+	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
+	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
 
 type postmanSDK struct {
