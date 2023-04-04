@@ -25,13 +25,13 @@ type PostmanSDKConfigOptions struct {
 	IgnoreIncomingRequests       []string
 }
 
-type postmanSDKConfig struct {
+type PostmanSDKConfig struct {
 	ApiKey        string
 	CollectionId  string
 	ConfigOptions PostmanSDKConfigOptions
 }
 
-func Init(collectionId string, apiKey string, options ...PostmanSDKConfigOption) postmanSDKConfig {
+func InitializeSDKConfig(collectionId string, apiKey string, options ...PostmanSDKConfigOption) PostmanSDKConfig {
 
 	o := PostmanSDKConfigOptions{
 		BufferIntervalInMilliseconds: DefaultBufferIntervalInMilliseconds * time.Millisecond,
@@ -43,7 +43,7 @@ func Init(collectionId string, apiKey string, options ...PostmanSDKConfigOption)
 	for _, opt := range options {
 		opt(&o)
 	}
-	sdkconfig := &postmanSDKConfig{
+	sdkconfig := &PostmanSDKConfig{
 		ApiKey:        apiKey,
 		CollectionId:  collectionId,
 		ConfigOptions: o,
