@@ -6,16 +6,19 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/postmanlabs/postmansdk/utils"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	instrumentations_gin "github.com/postmanlabs/postmansdk/instrumentations/gin"
 	pminterfaces "github.com/postmanlabs/postmansdk/interfaces"
+	pmutils "github.com/postmanlabs/postmansdk/utils"
 )
 
 type postmanSDK struct {
@@ -52,7 +55,17 @@ func (psdk *postmanSDK) installExportPipeline(
 	ctx context.Context,
 ) (func(context.Context) error, error) {
 
-	exporter, err := newExporter()
+	clientHeaders := map[string]string{
+		"x-api-key": psdk.Config.ApiKey,
+	}
+	client := otlptracehttp.NewClient(
+		otlptracehttp.WithEndpoint(
+			psdk.Config.ConfigOptions.ReceiverBaseUrl,
+		),
+		otlptracehttp.WithURLPath(pmutils.TRACE_RECEIVER_PATH),
+		otlptracehttp.WithHeaders(clientHeaders),
+	)
+	exporter, err := otlptrace.New(ctx, client)
 
 	if err != nil {
 
@@ -63,7 +76,7 @@ func (psdk *postmanSDK) installExportPipeline(
 		context.Background(),
 		resource.WithAttributes(
 			attribute.String("library.language", "go"),
-			attribute.String(utils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME, psdk.Config.CollectionId),
+			attribute.String(pmutils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME, psdk.Config.CollectionId),
 		),
 	)
 	if err != nil {
@@ -85,7 +98,7 @@ func (psdk *postmanSDK) installExportPipeline(
 }
 
 func InstrumentGin(router *gin.Engine) {
-	router.Use(otelgin.Middleware(""))
+	router.Use(otelgin.Middleware("postman-sdk"))
 	router.Use(instrumentations_gin.Middleware())
 }
 
