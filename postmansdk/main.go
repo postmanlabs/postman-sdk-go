@@ -5,9 +5,9 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	instrumentations_gin "github.com/postmanlabs/postmansdk/instrumentations/gin"
-	pminterfaces "github.com/postmanlabs/postmansdk/interfaces"
-	"github.com/postmanlabs/postmansdk/utils"
+	instrumentations_gin "github.com/postmanlabs/postman-go-sdk/postmansdk/instrumentations/gin"
+	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
+	"github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -28,6 +28,8 @@ func Initialize(
 
 	// Adding collectionId to global var
 	globalCollectionId = collectionId
+
+	PrintVersion()
 
 	// Adding a stdout exporter
 	exporter, err := newExporter()
