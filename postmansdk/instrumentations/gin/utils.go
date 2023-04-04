@@ -3,7 +3,6 @@ package instrumentations_gin
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,7 +10,7 @@ import (
 func jsonStringify(v any) string {
 	b, err := json.Marshal(v)
 	if err != nil {
-		fmt.Println(err)
+		log.WithError(err).Error("JSON marshaling failed")
 	}
 
 	return string(b)

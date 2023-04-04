@@ -2,12 +2,12 @@ package postmansdk
 
 import (
 	"context"
-	"log"
 
 	"github.com/gin-gonic/gin"
 	instrumentations_gin "github.com/postmanlabs/postmansdk/instrumentations/gin"
 	pminterfaces "github.com/postmanlabs/postmansdk/interfaces"
 	"github.com/postmanlabs/postmansdk/utils"
+	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -15,10 +15,12 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-var globalCollectionId string
-
-// This implementation will be replaced by something else that @gmann42 will add to save state.
-var ignoreIncomingRequests []string
+var (
+	globalCollectionId string
+	// This implementation will be replaced by something else that @gmann42 will add to save state.
+	ignoreIncomingRequests []string
+	log                    *logrus.Entry
+)
 
 func Initialize(
 	collectionId string,
@@ -27,7 +29,15 @@ func Initialize(
 ) func(context.Context) error {
 
 	sdkconfig := pminterfaces.Init(collectionId, apiKey, options...)
-	log.Printf("SdkConfig is intialized as %v", sdkconfig)
+
+	// Setting log level
+	if sdkconfig.ConfigOptions.Debug {
+		log = utils.CreateNewLogger(logrus.DebugLevel)
+	} else {
+		log = utils.CreateNewLogger(logrus.ErrorLevel)
+	}
+
+	log.WithField("sdkconfig", sdkconfig).Info("SdkConfig is intialized")
 
 	// Check if the sdk should be enabled or not
 	if !sdkconfig.ConfigOptions.Enable {
@@ -45,7 +55,7 @@ func Initialize(
 	exporter, err := newExporter()
 
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Error("Failed to create a new exporter")
 	}
 	resources, err := resource.New(
 		context.Background(),
@@ -55,7 +65,7 @@ func Initialize(
 		),
 	)
 	if err != nil {
-		log.Println("Could not set resources: ", err)
+		log.WithError(err).Error("Could not set resources")
 	}
 
 	otel.SetTracerProvider(
