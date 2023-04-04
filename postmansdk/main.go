@@ -121,16 +121,3 @@ func InstrumentGin(router *gin.Engine) {
 	router.Use(otelgin.Middleware(""))
 	router.Use(instrumentations_gin.Middleware())
 }
-
-// newExporter returns a console exporter.
-func newExporter() (sdktrace.SpanExporter, error) {
-	return stdouttrace.New(
-		// stdouttrace.WithWriter(w),
-		// Use human-readable output.
-		stdouttrace.WithPrettyPrint(),
-		// Do not print timestamps for the demo.
-		stdouttrace.WithoutTimestamps(),
-	)
-}
-
-// func newResource()
