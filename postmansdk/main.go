@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
@@ -16,6 +17,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
+	pmexporter "github.com/postmanlabs/postmansdk/exporter"
 	instrumentations_gin "github.com/postmanlabs/postmansdk/instrumentations/gin"
 	pminterfaces "github.com/postmanlabs/postmansdk/interfaces"
 	pmutils "github.com/postmanlabs/postmansdk/utils"
@@ -51,32 +53,50 @@ func Initialize(
 
 }
 
-func (psdk *postmanSDK) installExportPipeline(
-	ctx context.Context,
-) (func(context.Context) error, error) {
-
+func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporter, error) {
 	clientHeaders := map[string]string{
 		"x-api-key": psdk.Config.ApiKey,
 	}
 	client := otlptracehttp.NewClient(
 		otlptracehttp.WithEndpoint(
-			psdk.Config.ConfigOptions.ReceiverBaseUrl,
+			strings.Replace(
+				psdk.Config.ConfigOptions.ReceiverBaseUrl,
+				"https://",
+				"",
+				1,
+			),
 		),
 		otlptracehttp.WithURLPath(pmutils.TRACE_RECEIVER_PATH),
 		otlptracehttp.WithHeaders(clientHeaders),
 	)
 	exporter, err := otlptrace.New(ctx, client)
 
+	return exporter, err
+}
+
+func (psdk *postmanSDK) installExportPipeline(
+	ctx context.Context,
+) (func(context.Context) error, error) {
+
+	exporter, err := psdk.getOTLPExporter(ctx)
+
 	if err != nil {
 
 		return nil, fmt.Errorf("creating OTLP trace exporter: %w", err)
+	}
+
+	pexporter := &pmexporter.PostmanExporter{
+		Exporter: *exporter,
 	}
 
 	resources, err := resource.New(
 		context.Background(),
 		resource.WithAttributes(
 			attribute.String("library.language", "go"),
-			attribute.String(pmutils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME, psdk.Config.CollectionId),
+			attribute.String(
+				pmutils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME,
+				psdk.Config.CollectionId,
+			),
 		),
 	)
 	if err != nil {
@@ -85,7 +105,7 @@ func (psdk *postmanSDK) installExportPipeline(
 
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(
-			exporter,
+			pexporter,
 			sdktrace.WithBatchTimeout(
 				psdk.Config.ConfigOptions.BufferIntervalInMilliseconds,
 			),
@@ -98,7 +118,7 @@ func (psdk *postmanSDK) installExportPipeline(
 }
 
 func InstrumentGin(router *gin.Engine) {
-	router.Use(otelgin.Middleware("postman-sdk"))
+	router.Use(otelgin.Middleware(""))
 	router.Use(instrumentations_gin.Middleware())
 }
 
