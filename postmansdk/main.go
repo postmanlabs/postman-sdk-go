@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
-	pminterfaces "github.com/postmanlabs/postmansdk/interfaces"
 	instrumentations_gin "github.com/postmanlabs/postmansdk/instrumentations/gin"
+	pminterfaces "github.com/postmanlabs/postmansdk/interfaces"
 )
 
 type postmanSDK struct {
@@ -28,7 +28,7 @@ func Initialize(
 	collectionId string,
 	apiKey string,
 	options ...pminterfaces.PostmanSDKConfigOption,
-) {
+) func(context.Context) error {
 
 	sdkconfig := pminterfaces.InitializeSDKConfig(collectionId, apiKey, options...)
 	log.Printf("SdkConfig is intialized as %+v", sdkconfig)
@@ -37,8 +37,6 @@ func Initialize(
 		Config: sdkconfig,
 	}
 
-
-	// TODO: Should this be passed from request handler ?
 	ctx := context.Background()
 
 	shutdown, err := psdk.installExportPipeline(ctx)
@@ -46,14 +44,7 @@ func Initialize(
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	defer func() {
-
-		if err := shutdown(ctx); err != nil {
-			// TODO: How to handle this error ?
-			log.Println(err)
-		}
-	}()
+	return shutdown
 
 }
 
@@ -61,8 +52,7 @@ func (psdk *postmanSDK) installExportPipeline(
 	ctx context.Context,
 ) (func(context.Context) error, error) {
 
-
-	exporter, err := newExporter() 
+	exporter, err := newExporter()
 
 	if err != nil {
 
@@ -98,6 +88,7 @@ func InstrumentGin(router *gin.Engine) {
 	router.Use(otelgin.Middleware(""))
 	router.Use(instrumentations_gin.Middleware())
 }
+
 // newExporter returns a console exporter.
 func newExporter() (sdktrace.SpanExporter, error) {
 	return stdouttrace.New(
