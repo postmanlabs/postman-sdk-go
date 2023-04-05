@@ -1,12 +1,9 @@
-module postmansdk
+module github.com/postmanlabs/postmansdk
 
 go 1.20
 
-replace github.com/postmanlabs/postmansdk => ../postmansdk
-
 require (
 	github.com/gin-gonic/gin v1.9.0
-	github.com/postmanlabs/postmansdk v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.40.0
 	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.14.0
