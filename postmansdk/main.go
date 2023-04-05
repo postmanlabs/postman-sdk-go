@@ -87,7 +87,6 @@ func (psdk *postmanSDK) installExportPipeline(
 	if err != nil {
 		return nil, fmt.Errorf("creating OTLP trace exporter: %w", err)
 	}
-
 	pexporter := &pmexporter.PostmanExporter{
 		Exporter: *exporter,
 	}

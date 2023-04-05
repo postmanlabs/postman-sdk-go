@@ -36,7 +36,7 @@ type PostmanSDKConfig struct {
 func InitializeSDKConfig(collectionId string, apiKey string, options ...PostmanSDKConfigOption) PostmanSDKConfig {
 
 	o := PostmanSDKConfigOptions{
-		BufferIntervalInMilliseconds: DefaultBufferIntervalInMilliseconds * time.Millisecond,
+		BufferIntervalInMilliseconds: time.Duration(DefaultBufferIntervalInMilliseconds) * time.Millisecond,
 		Debug:                        DefaultDebug,
 		Enable:                       DefaultEnable,
 		ReceiverBaseUrl:              DefaultReceiverBaseUrl,
