@@ -2,11 +2,11 @@ module testgo
 
 go 1.20
 
-replace github.com/postmanlabs/postmansdk => /Users/mann/workspace/github/postman-go-sdk/postmansdk
+replace github.com/postmanlabs/postman-go-sdk => ../../../
 
 require (
 	github.com/gin-gonic/gin v1.9.0
-	github.com/postmanlabs/postmansdk v0.0.0-00010101000000-000000000000
+	github.com/postmanlabs/postman-go-sdk v0.0.0-00010101000000-000000000000
 )
 
 require (
