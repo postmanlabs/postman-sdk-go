@@ -10,7 +10,6 @@ import (
 
 type PostmanExporter struct {
 	otlptrace.Exporter
-	
 }
 
 func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnlySpan) error {
