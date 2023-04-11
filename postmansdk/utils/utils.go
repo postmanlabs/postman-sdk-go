@@ -6,7 +6,10 @@ import (
 	"strconv"
 )
 
-var ErrEnvVarEmpty = errors.New("getenv: environment variable empty")
+var (
+	ErrEnvVarEmpty = errors.New("getenv: environment variable empty")
+	sdkEnabled     = true
+)
 
 func GetenvStr(key string) (string, error) {
 	v := os.Getenv(key)
@@ -26,4 +29,16 @@ func GetenvBool(key string) (bool, error) {
 		return false, err
 	}
 	return v, nil
+}
+
+func IsSDKEnabled() bool {
+	return sdkEnabled
+}
+
+func DisableSDK() {
+	sdkEnabled = false
+}
+
+func EnableSDK() {
+	sdkEnabled = true
 }
