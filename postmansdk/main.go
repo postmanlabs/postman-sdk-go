@@ -22,8 +22,7 @@ type postmanSDK struct {
 	Config pminterfaces.PostmanSDKConfig
 }
 
-// This implementation will be replaced by something else that @gmann42 will add to save state.
-var ignoreIncomingRequests []string
+var psdk *postmanSDK
 
 func Initialize(
 	collectionId string,
@@ -34,11 +33,9 @@ func Initialize(
 	sdkconfig := pminterfaces.InitializeSDKConfig(collectionId, apiKey, options...)
 	log.Printf("SdkConfig is intialized as %+v", sdkconfig)
 
-	psdk := &postmanSDK{
+	psdk = &postmanSDK{
 		Config: sdkconfig,
 	}
-	// Remove this from here.
-	ignoreIncomingRequests = sdkconfig.ConfigOptions.IgnoreIncomingRequests
 
 	ctx := context.Background()
 
@@ -58,7 +55,7 @@ func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporte
 	client := otlptracehttp.NewClient(
 		otlptracehttp.WithEndpoint(
 			strings.Replace(
-				psdk.Config.ConfigOptions.ReceiverBaseUrl,
+				psdk.Config.Options.ReceiverBaseUrl,
 				"https://",
 				"",
 				1,
@@ -79,7 +76,6 @@ func (psdk *postmanSDK) installExportPipeline(
 	exporter, err := psdk.getOTLPExporter(ctx)
 
 	if err != nil {
-
 		return nil, fmt.Errorf("creating OTLP trace exporter: %w", err)
 	}
 
@@ -92,8 +88,7 @@ func (psdk *postmanSDK) installExportPipeline(
 		resource.WithAttributes(
 			attribute.String("library.language", "go"),
 			attribute.String(
-				pmutils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME,
-				psdk.Config.CollectionId,
+				pmutils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME, psdk.Config.CollectionId,
 			),
 		),
 	)
@@ -105,7 +100,7 @@ func (psdk *postmanSDK) installExportPipeline(
 		sdktrace.WithBatcher(
 			pexporter,
 			sdktrace.WithBatchTimeout(
-				psdk.Config.ConfigOptions.BufferIntervalInMilliseconds,
+				psdk.Config.Options.BufferIntervalInMilliseconds,
 			),
 		),
 		sdktrace.WithResource(resources),

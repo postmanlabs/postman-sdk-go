@@ -26,9 +26,9 @@ type PostmanSDKConfigOptions struct {
 }
 
 type PostmanSDKConfig struct {
-	ApiKey        string
-	CollectionId  string
-	ConfigOptions PostmanSDKConfigOptions
+	ApiKey       string
+	CollectionId string
+	Options      PostmanSDKConfigOptions
 }
 
 func InitializeSDKConfig(collectionId string, apiKey string, options ...PostmanSDKConfigOption) PostmanSDKConfig {
@@ -44,9 +44,9 @@ func InitializeSDKConfig(collectionId string, apiKey string, options ...PostmanS
 		opt(&o)
 	}
 	sdkconfig := &PostmanSDKConfig{
-		ApiKey:        apiKey,
-		CollectionId:  collectionId,
-		ConfigOptions: o,
+		ApiKey:       apiKey,
+		CollectionId: collectionId,
+		Options:      o,
 	}
 	return *sdkconfig
 }
