@@ -3,7 +3,7 @@ package interfaces
 import (
 	"time"
 
-	"github.com/postmanlabs/postmansdk/utils"
+	"github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
 
 const (
@@ -27,13 +27,13 @@ type PostmanSDKConfigOptions struct {
 	IgnoreIncomingRequests       []string
 }
 
-type postmanSDKConfig struct {
-	ApiKey        string
-	CollectionId  string
-	ConfigOptions PostmanSDKConfigOptions
+type PostmanSDKConfig struct {
+	ApiKey       string
+	CollectionId string
+	Options      PostmanSDKConfigOptions
 }
 
-func Init(collectionId string, apiKey string, options ...PostmanSDKConfigOption) postmanSDKConfig {
+func InitializeSDKConfig(collectionId string, apiKey string, options ...PostmanSDKConfigOption) PostmanSDKConfig {
 
 	o := PostmanSDKConfigOptions{
 		BufferIntervalInMilliseconds: DefaultBufferIntervalInMilliseconds * time.Millisecond,
@@ -45,16 +45,16 @@ func Init(collectionId string, apiKey string, options ...PostmanSDKConfigOption)
 	for _, opt := range options {
 		opt(&o)
 	}
-	sdkconfig := &postmanSDKConfig{
-		ApiKey:        apiKey,
-		CollectionId:  collectionId,
-		ConfigOptions: o,
+	sdkconfig := &PostmanSDKConfig{
+		ApiKey:       apiKey,
+		CollectionId: collectionId,
+		Options:      o,
 	}
 
 	// Add a check here for the env config to start/stop the SDK.
 	v, err := utils.GetenvBool(utils.POSTMAN_SDK_ENABLE_ENV_VAR_NAME)
 	if err == nil {
-		sdkconfig.ConfigOptions.Enable = v
+		sdkconfig.Options.Enable = v
 	}
 
 	return *sdkconfig

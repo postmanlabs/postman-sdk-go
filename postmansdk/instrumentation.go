@@ -4,33 +4,22 @@ import (
 	"net/http"
 	"regexp"
 
+	instrumentations_gin "github.com/postmanlabs/postman-go-sdk/postmansdk/instrumentations/gin"
+	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
+
+	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
-	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
-
-// newExporter returns a console exporter.
-func newExporter() (sdktrace.SpanExporter, error) {
-	return stdouttrace.New(
-		// stdouttrace.WithWriter(w),
-		// Use human-readable output.
-		stdouttrace.WithPrettyPrint(),
-		// Do not print timestamps for the demo.
-		stdouttrace.WithoutTimestamps(),
-	)
-}
-
-// func newResource()
 
 // getFilters reads the ignoreIncomingRequests array and produces a otelgin.Option
 // to fiter out requests that match the regex.
 func getFilters() otelgin.Option {
-	if len(ignoreIncomingRequests) == 0 {
+	if len(psdk.Config.Options.IgnoreIncomingRequests) == 0 {
 		return nil
 	}
 
 	return otelgin.WithFilter(func(r *http.Request) bool {
-		for _, f := range ignoreIncomingRequests {
+		for _, f := range psdk.Config.Options.IgnoreIncomingRequests {
 			matches, _ := regexp.MatchString(f, r.URL.Path)
 
 			if matches {
@@ -56,4 +45,13 @@ func getMiddlewareOptions() []otelgin.Option {
 	}
 
 	return middlewareOptions
+}
+
+func InstrumentGin(router *gin.Engine) {
+	if !pmutils.IsSDKEnabled() {
+		return
+	}
+
+	router.Use(otelgin.Middleware("", getMiddlewareOptions()...))
+	router.Use(instrumentations_gin.Middleware())
 }

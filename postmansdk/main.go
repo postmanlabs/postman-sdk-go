@@ -3,23 +3,30 @@ package postmansdk
 import (
 	"context"
 
-	"github.com/gin-gonic/gin"
-	instrumentations_gin "github.com/postmanlabs/postmansdk/instrumentations/gin"
-	pminterfaces "github.com/postmanlabs/postmansdk/interfaces"
-	"github.com/postmanlabs/postmansdk/utils"
+	"fmt"
+	"strings"
+
+	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	pmexporter "github.com/postmanlabs/postman-go-sdk/postmansdk/exporter"
+	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
 
+type postmanSDK struct {
+	Config pminterfaces.PostmanSDKConfig
+}
+
 var (
-	globalCollectionId string
-	// This implementation will be replaced by something else that @gmann42 will add to save state.
-	ignoreIncomingRequests []string
-	log                    *logrus.Entry
+	psdk *postmanSDK
+	log  *logrus.Entry
 )
 
 func Initialize(
@@ -28,58 +35,100 @@ func Initialize(
 	options ...pminterfaces.PostmanSDKConfigOption,
 ) func(context.Context) error {
 
-	sdkconfig := pminterfaces.Init(collectionId, apiKey, options...)
+	sdkconfig := pminterfaces.InitializeSDKConfig(collectionId, apiKey, options...)
 
 	// Setting log level
-	if sdkconfig.ConfigOptions.Debug {
-		log = utils.CreateNewLogger(logrus.DebugLevel)
+	if sdkconfig.Options.Debug {
+		log = pmutils.CreateNewLogger(logrus.DebugLevel)
 	} else {
-		log = utils.CreateNewLogger(logrus.ErrorLevel)
+		log = pmutils.CreateNewLogger(logrus.ErrorLevel)
 	}
 
 	log.WithField("sdkconfig", sdkconfig).Info("SdkConfig is intialized")
 
 	// Check if the sdk should be enabled or not
-	if !sdkconfig.ConfigOptions.Enable {
+	if !sdkconfig.Options.Enable {
+		pmutils.DisableSDK()
+		log.Error("Postman SDK is disabled.")
+
 		return func(ctx context.Context) error {
 			return nil
 		}
 	}
 
-	// Adding collectionId to global var
-	globalCollectionId = collectionId
-	// Remove this from here.
-	ignoreIncomingRequests = sdkconfig.ConfigOptions.IgnoreIncomingRequests
+	psdk = &postmanSDK{
+		Config: sdkconfig,
+	}
 
-	// Adding a stdout exporter
-	exporter, err := newExporter()
+	ctx := context.Background()
+
+	shutdown, err := psdk.installExportPipeline(ctx)
 
 	if err != nil {
 		log.WithError(err).Error("Failed to create a new exporter")
 	}
+	return shutdown
+
+}
+
+func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporter, error) {
+	clientHeaders := map[string]string{
+		"x-api-key": psdk.Config.ApiKey,
+	}
+	client := otlptracehttp.NewClient(
+		otlptracehttp.WithEndpoint(
+			strings.Replace(
+				psdk.Config.Options.ReceiverBaseUrl,
+				"https://",
+				"",
+				1,
+			),
+		),
+		otlptracehttp.WithURLPath(pmutils.TRACE_RECEIVER_PATH),
+		otlptracehttp.WithHeaders(clientHeaders),
+	)
+	exporter, err := otlptrace.New(ctx, client)
+
+	return exporter, err
+}
+
+func (psdk *postmanSDK) installExportPipeline(
+	ctx context.Context,
+) (func(context.Context) error, error) {
+
+	exporter, err := psdk.getOTLPExporter(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("creating OTLP trace exporter: %w", err)
+	}
+
+	pexporter := &pmexporter.PostmanExporter{
+		Exporter: *exporter,
+	}
+
 	resources, err := resource.New(
 		context.Background(),
 		resource.WithAttributes(
 			attribute.String("library.language", "go"),
-			attribute.String(utils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME, collectionId),
+			attribute.String(
+				pmutils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME, psdk.Config.CollectionId,
+			),
 		),
 	)
 	if err != nil {
 		log.WithError(err).Error("Could not set resources")
 	}
 
-	otel.SetTracerProvider(
-		sdktrace.NewTracerProvider(
-			sdktrace.WithSampler(sdktrace.AlwaysSample()),
-			sdktrace.WithBatcher(exporter, sdktrace.WithBatchTimeout(sdkconfig.ConfigOptions.BufferIntervalInMilliseconds)),
-			sdktrace.WithResource(resources),
+	tracerProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(
+			pexporter,
+			sdktrace.WithBatchTimeout(
+				psdk.Config.Options.BufferIntervalInMilliseconds,
+			),
 		),
+		sdktrace.WithResource(resources),
 	)
+	otel.SetTracerProvider(tracerProvider)
 
-	return exporter.Shutdown
-}
-
-func InstrumentGin(router *gin.Engine) {
-	router.Use(otelgin.Middleware(globalCollectionId, getMiddlewareOptions()...))
-	router.Use(instrumentations_gin.Middleware())
+	return tracerProvider.Shutdown, nil
 }
