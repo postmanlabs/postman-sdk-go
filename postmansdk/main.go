@@ -6,9 +6,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
-
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -17,7 +14,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	pmexporter "github.com/postmanlabs/postman-go-sdk/postmansdk/exporter"
-	instrumentations_gin "github.com/postmanlabs/postman-go-sdk/postmansdk/instrumentations/gin"
 	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
@@ -25,6 +21,9 @@ import (
 type postmanSDK struct {
 	Config pminterfaces.PostmanSDKConfig
 }
+
+// This implementation will be replaced by something else that @gmann42 will add to save state.
+var ignoreIncomingRequests []string
 
 func Initialize(
 	collectionId string,
@@ -38,6 +37,8 @@ func Initialize(
 	psdk := &postmanSDK{
 		Config: sdkconfig,
 	}
+	// Remove this from here.
+	ignoreIncomingRequests = sdkconfig.ConfigOptions.IgnoreIncomingRequests
 
 	ctx := context.Background()
 
@@ -112,9 +113,4 @@ func (psdk *postmanSDK) installExportPipeline(
 	otel.SetTracerProvider(tracerProvider)
 
 	return tracerProvider.Shutdown, nil
-}
-
-func InstrumentGin(router *gin.Engine) {
-	router.Use(otelgin.Middleware(""))
-	router.Use(instrumentations_gin.Middleware())
 }
