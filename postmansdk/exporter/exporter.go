@@ -3,7 +3,6 @@ package exporter
 import (
 	"context"
 	"log"
-	"fmt"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
