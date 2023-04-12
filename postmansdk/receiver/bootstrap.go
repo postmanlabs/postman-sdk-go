@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"time"
 
@@ -48,18 +49,18 @@ func CallBootStrapAPI(sdkconfig pminterfaces.PostmanSDKConfig) (bool, error) {
 	payload := &bootStrapAPIPaylod{
 		SDK: SdkPayload{
 			CollectionId: sdkconfig.CollectionId,
-			Enabled:      sdkconfig.ConfigOptions.Enable,
+			Enabled:      sdkconfig.Options.Enable,
 		},
 	}
-	url := sdkconfig.ConfigOptions.ReceiverBaseUrl + BOOTSTRAP_PATH
+	url := sdkconfig.Options.ReceiverBaseUrl + BOOTSTRAP_PATH
 
 	b := new(bytes.Buffer)
 	err := json.NewEncoder(b).Encode(payload)
 
 	if err != nil {
-		log.Printf("Error in json encoding %v", err)
+		return false, fmt.Errorf("error in json encoding %v", err)
 	}
-	log.Printf("Bootstrap API payload:%v", b)
+	log.Printf("bootstrap API payload:%v", b)
 
 	client := &http.Client{}
 	req, reqErr := http.NewRequest("POST", url, b)
@@ -71,7 +72,7 @@ func CallBootStrapAPI(sdkconfig pminterfaces.PostmanSDKConfig) (bool, error) {
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("x-api-key", sdkconfig.ApiKey)
 
-	for retries := 0; retries < 2; retries++ {
+	for retries := 0; retries < BOOTSTRAP_RETRY_COUNT; retries++ {
 		resp, err := client.Do(req)
 
 		if err != nil {
@@ -81,52 +82,60 @@ func CallBootStrapAPI(sdkconfig pminterfaces.PostmanSDKConfig) (bool, error) {
 
 		defer resp.Body.Close()
 
-		if isRetryable(resp.StatusCode) {
-			log.Printf(
-				"Retry:%d bootstrap API received resp.status:%d",
-				retries,
-				resp.StatusCode,
-			)
-			time.Sleep(1 * time.Second)
-			continue
-		} else if resp.StatusCode == http.StatusOK {
+		log.Printf("bootstrap API resp.status:%d", resp.StatusCode)
 
-			var bootResp bootStrapApIResponse
-			decodeErr := json.NewDecoder(resp.Body).Decode(&bootResp)
+		var bootResp bootStrapApIResponse
+		decodeErr := json.NewDecoder(resp.Body).Decode(&bootResp)
+
+		if decodeErr != nil {
+			decodeErr = fmt.Errorf(
+				"bootstrap API resp.status:%d resp.Body:%+v parsing failed with error:%v",
+				resp.StatusCode,
+				resp.Body,
+				decodeErr,
+			)
+		}else {
+			log.Printf("bootstrap API resp.Body: %+v", bootResp)
+		}
+		if resp.StatusCode == http.StatusOK {
 
 			if decodeErr != nil {
-
-				return false, fmt.Errorf(
-					"failed to parse bootstrap api resp.status:%v resp.Body:%v into json with error:%v",
-					resp.StatusCode,
-					resp.Body,
-					decodeErr,
-				)
+				return false, decodeErr
 			}
 
 			if !bootResp.OK {
 
 				return false, fmt.Errorf(
-					"non OK bootstrap API resp.status:%v resp.body: %v",
+					"non OK bootstrap API resp.status:%v resp.body: %+v",
 					resp.StatusCode,
 					bootResp,
 				)
 			}
 
-			log.Printf(
-				"Bootstrap API called resp.status:%v, resp.body:%+v",
-				resp.StatusCode, bootResp,
-			)
-
-			// If CurrentConfig wasn't returned by bootstrap, it'll be set
-			// as false by default due to golang.
-			// TODO: Throw error if currentConfig not present ?
 			return bootResp.CurrentConfig.Enabled, nil
 
-		} else {
+		} else if isRetryable(resp.StatusCode) {
+			log.Printf(
+				"Retry:%d bootstrap API received resp.status:%d",
+				retries,
+				resp.StatusCode,
+			)
 
+			delay := time.Duration(math.Pow(EXPONENTIAL_BACKOFF_BASE, float64(retries)))
+
+			time.Sleep(delay * time.Second)
+			continue
+		} else {
+			if decodeErr != nil {
+				return false,
+					fmt.Errorf("bootstrap failed resp.status:%d", resp.StatusCode)
+			}
 			return false,
-				fmt.Errorf("bootstrap resp.status:%d", resp.StatusCode)
+				fmt.Errorf(
+					"bootstrap failed resp.status:%d, resp.Body:%+v",
+					resp.StatusCode,
+					bootResp,
+				)
 		}
 
 	}

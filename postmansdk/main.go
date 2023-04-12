@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 	"github.com/sirupsen/logrus"
 
 	"go.opentelemetry.io/otel"
@@ -17,6 +16,8 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	pmexporter "github.com/postmanlabs/postman-go-sdk/postmansdk/exporter"
+	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
+	pmreceiver "github.com/postmanlabs/postman-go-sdk/postmansdk/receiver"
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
 
@@ -26,6 +27,10 @@ type postmanSDK struct {
 
 var psdk *postmanSDK
 
+func errorCleanup(context.Context) error {
+	return nil
+}
+
 func Initialize(
 	collectionId string,
 	apiKey string,
@@ -33,6 +38,20 @@ func Initialize(
 ) (func(context.Context) error, error) {
 
 	sdkconfig := pminterfaces.InitializeSDKConfig(collectionId, apiKey, options...)
+
+	if !sdkconfig.Options.Enable {
+		return errorCleanup, fmt.Errorf("postman SDK is not enabled")
+	}
+
+	currentConfig, err := pmreceiver.CallBootStrapAPI(sdkconfig)
+
+	if err != nil {
+		pmutils.Log.Error(err)
+
+		return errorCleanup, fmt.Errorf("bootstrap SDK failed with err:%v", err)
+	}
+
+	sdkconfig.Options.Enable = currentConfig
 
 	// Setting log level
 	if sdkconfig.Options.Debug {
@@ -53,7 +72,10 @@ func Initialize(
 
 	if err != nil {
 		pmutils.Log.WithError(err).Error("Failed to create a new exporter")
+
+		return errorCleanup, err
 	}
+
 	return shutdown, nil
 }
 
