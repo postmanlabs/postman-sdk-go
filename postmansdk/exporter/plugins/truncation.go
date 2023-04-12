@@ -51,9 +51,7 @@ func Truncation(span tracesdk.ReadOnlySpan) {
 
 func trimBodyValuesToTypes(data interface{}, currentLevel int) interface{} {
 
-	fmt.Println("Are we here ?")
 	if data == nil {
-		fmt.Println("Not possible")
 		return nil
 	}
 
@@ -64,12 +62,10 @@ func trimBodyValuesToTypes(data interface{}, currentLevel int) interface{} {
 		if err != nil {
 			// If the data is not JSON parsable, it does not make sense to continue, as we only support
 			// content-type = application/json at the moment.
-			fmt.Println("Unable to parse JSON data while applying truncation. Bailing out.")
 			return data
 		}
 		data = parsedData
 	case []interface{}:
-		fmt.Println("Interface")
 		trimmedBody := make([]interface{}, 0)
 		for _, value := range data.([]interface{}) {
 			if currentLevel <= DEFAULT_DATA_TRUNCATION_LEVEL && value != nil && reflect.TypeOf(value).Kind() == reflect.Map {
@@ -82,7 +78,6 @@ func trimBodyValuesToTypes(data interface{}, currentLevel int) interface{} {
 		}
 		return trimmedBody
 	case map[string]interface{}:
-		fmt.Println("Map Interface")
 		trimmedBody := make(map[string]interface{})
 		for key, value := range data.(map[string]interface{}) {
 			if currentLevel <= DEFAULT_DATA_TRUNCATION_LEVEL && value != nil && reflect.TypeOf(value).Kind() == reflect.Map {
@@ -95,7 +90,6 @@ func trimBodyValuesToTypes(data interface{}, currentLevel int) interface{} {
 		}
 		return trimmedBody
 	default:
-		fmt.Println("Default")
 		return data
 	}
 	return data
