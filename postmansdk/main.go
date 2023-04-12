@@ -28,20 +28,10 @@ func Initialize(
 	collectionId string,
 	apiKey string,
 	options ...pminterfaces.PostmanSDKConfigOption,
-) func(context.Context) error {
+) (func(context.Context) error, error) {
 
 	sdkconfig := pminterfaces.InitializeSDKConfig(collectionId, apiKey, options...)
 	log.Printf("SdkConfig is intialized as %+v", sdkconfig)
-
-	// Check if the sdk should be enabled or not
-	if !sdkconfig.Options.Enable {
-		pmutils.DisableSDK()
-		log.Printf("Postman SDK is disabled.")
-
-		return func(ctx context.Context) error {
-			return nil
-		}
-	}
 
 	psdk = &postmanSDK{
 		Config: sdkconfig,
@@ -54,8 +44,7 @@ func Initialize(
 	if err != nil {
 		log.Fatal(err)
 	}
-	return shutdown
-
+	return shutdown, nil
 }
 
 func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporter, error) {
