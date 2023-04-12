@@ -5,7 +5,6 @@ import (
 	"regexp"
 
 	instrumentations_gin "github.com/postmanlabs/postman-go-sdk/postmansdk/instrumentations/gin"
-	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
@@ -48,10 +47,6 @@ func getMiddlewareOptions() []otelgin.Option {
 }
 
 func InstrumentGin(router *gin.Engine) {
-	if !pmutils.IsSDKEnabled() {
-		return
-	}
-
 	router.Use(otelgin.Middleware("", getMiddlewareOptions()...))
 	router.Use(instrumentations_gin.Middleware())
 }
