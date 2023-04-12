@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 
 	"github.com/gin-gonic/gin"
+
+	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
 
 func jsonStringify(v any) string {
 	b, err := json.Marshal(v)
 	if err != nil {
-		log.WithError(err).Error("JSON marshaling failed")
+		pmutils.Log.WithError(err).Error("JSON marshaling failed")
 	}
 
 	return string(b)

@@ -5,12 +5,10 @@ import (
 	"io"
 
 	"github.com/gin-gonic/gin"
-	"github.com/postmanlabs/postmansdk/utils"
+	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
-
-var log = utils.GetLogger()
 
 func getRequestHeaders(c *gin.Context) string {
 	return jsonStringify(arrayToValue(c.Request.Header))
@@ -39,7 +37,7 @@ func getRequestBody(c *gin.Context) string {
 	data, err := io.ReadAll(c.Request.Body)
 
 	if err != nil {
-		log.WithError(err).Error("Failed to read request body data")
+		pmutils.Log.WithError(err).Error("Failed to read request body data")
 	}
 
 	// Request Body is an io.ReadCloser stream, which can be read only once, since

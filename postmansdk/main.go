@@ -24,10 +24,7 @@ type postmanSDK struct {
 	Config pminterfaces.PostmanSDKConfig
 }
 
-var (
-	psdk *postmanSDK
-	log  *logrus.Entry
-)
+var psdk *postmanSDK
 
 func Initialize(
 	collectionId string,
@@ -39,17 +36,17 @@ func Initialize(
 
 	// Setting log level
 	if sdkconfig.Options.Debug {
-		log = pmutils.CreateNewLogger(logrus.DebugLevel)
+		pmutils.CreateNewLogger(logrus.DebugLevel)
 	} else {
-		log = pmutils.CreateNewLogger(logrus.ErrorLevel)
+		pmutils.CreateNewLogger(logrus.ErrorLevel)
 	}
 
-	log.WithField("sdkconfig", sdkconfig).Info("SdkConfig is intialized")
+	pmutils.Log.WithField("sdkconfig", sdkconfig).Info("SdkConfig is intialized")
 
 	// Check if the sdk should be enabled or not
 	if !sdkconfig.Options.Enable {
 		pmutils.DisableSDK()
-		log.Error("Postman SDK is disabled.")
+		pmutils.Log.Error("Postman SDK is disabled.")
 
 		return func(ctx context.Context) error {
 			return nil
@@ -65,7 +62,7 @@ func Initialize(
 	shutdown, err := psdk.installExportPipeline(ctx)
 
 	if err != nil {
-		log.WithError(err).Error("Failed to create a new exporter")
+		pmutils.Log.WithError(err).Error("Failed to create a new exporter")
 	}
 	return shutdown
 
@@ -116,7 +113,7 @@ func (psdk *postmanSDK) installExportPipeline(
 		),
 	)
 	if err != nil {
-		log.WithError(err).Error("Could not set resources")
+		pmutils.Log.WithError(err).Error("Could not set resources")
 	}
 
 	tracerProvider := sdktrace.NewTracerProvider(
