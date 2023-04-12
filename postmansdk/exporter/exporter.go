@@ -30,8 +30,8 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 
 		if redactData == true {
 			rules := e.ConfigOptions.ConfigOptions.RedactSensitiveData["Rules"]
+			plugins.Redaction(span, rules)
 			log.Printf("Rules %+v", rules)
-			// plugins.Redaction(span, rules)
 		}
 
 		log.Printf("Debug: span number:%d span:%+v", idx, span)
