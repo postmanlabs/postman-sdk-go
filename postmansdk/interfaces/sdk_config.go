@@ -2,6 +2,8 @@ package interfaces
 
 import (
 	"time"
+
+	"github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
 
 const (
@@ -48,6 +50,13 @@ func InitializeSDKConfig(collectionId string, apiKey string, options ...PostmanS
 		CollectionId: collectionId,
 		Options:      o,
 	}
+
+	// Add a check here for the env config to start/stop the SDK.
+	v, err := utils.GetenvBool(utils.POSTMAN_SDK_ENABLE_ENV_VAR_NAME)
+	if err == nil {
+		sdkconfig.Options.Enable = v
+	}
+
 	return *sdkconfig
 }
 
