@@ -2,6 +2,7 @@ package exporter
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	plugins "github.com/postmanlabs/postman-go-sdk/postmansdk/exporter/plugins"
@@ -23,6 +24,11 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 	redactData := e.ConfigOptions.ConfigOptions.RedactSensitiveData["Enable"]
 
 	for idx, span := range ss {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("Issue faced while running plugins:", r)
+			}
+		}()
 
 		if truncateData {
 			plugins.Truncation(span)
