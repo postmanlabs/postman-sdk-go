@@ -11,40 +11,10 @@ import (
 
 func Redaction(span tracesdk.ReadOnlySpan, rules interface{}) {
 
-	fmt.Println("We are redacting")
+	fmt.Println("Redacting the given spans.")
 	dr := DataRedaction{regexRedaction: make(map[string]*regexp.Regexp)}
-	// fmt.Println("Rules are combiled ----------------- ")
 	dr.compileRules(rules)
-	// fmt.Println(dr.regexRedaction)
-
 	dr.runRedaction(span)
-
-	// spanAttributes := span.Attributes()
-
-	// for key, value := range spanAttributes {
-	// 	fmt.Printf("Value: %+v\n", value)
-	// 	data := spanAttributes[key].Value.AsString()
-
-	// 	var finalData interface{}
-
-	// 	fmt.Printf("Value: %+v\n", data)
-
-	// 	err := json.Unmarshal([]byte(data), &finalData)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-
-	// 	fmt.Printf("We are here KB")
-
-	// 	redactedData := dr.runRedaction(finalData)
-
-	// 	jsonStr, err := json.Marshal(redactedData)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-
-	// 	spanAttributes[key].Value = attribute.StringValue(string(jsonStr))
-	// }
 }
 
 type DataRedaction struct {
@@ -67,8 +37,6 @@ func (dr *DataRedaction) compileRules(rules interface{}) {
 	}
 
 	for rlName, regexRuleCompiled := range combinedRules {
-		fmt.Println(dr.regexRedaction)
-
 		dr.regexRedaction[rlName] = regexp.MustCompile("(?i)" + regexRuleCompiled.(string))
 	}
 }
@@ -81,35 +49,25 @@ func (dr *DataRedaction) runRedaction(span tracesdk.ReadOnlySpan) {
 	}()
 
 	for _, requestSection := range []string{"request", "response"} {
-		fmt.Printf("Request Section  Bansal : %+v \n", requestSection)
 		dr.redactData(requestSection, span)
 	}
 
 	// attributes[POSTMAN_DATA_REDACTION_SPAN_ATTRIBUTE] = "true"
-	// return attributes
 }
 
 func (dr *DataRedaction) redactData(requestSection string, span tracesdk.ReadOnlySpan) {
 	var redactionMap map[string]map[string]string
-
-	fmt.Printf("Atleast we are here xD  ")
-
 	var requestRedactionRuleSet map[string]map[string]string
 	err := json.Unmarshal([]byte(requestRedactionMap), &requestRedactionRuleSet)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("Check me please %+v ", requestRedactionRuleSet)
-
 	var responseRedactionRuleSet map[string]map[string]string
 	errr := json.Unmarshal([]byte(responseRedactionMap), &responseRedactionRuleSet)
 	if errr != nil {
-		fmt.Printf("Unknowm panic")
 		panic(err)
 	}
-
-	fmt.Printf("Did we reach here >>>>>. we are here xD  ")
 
 	if requestSection == "request" {
 		redactionMap = requestRedactionRuleSet
@@ -119,20 +77,13 @@ func (dr *DataRedaction) redactData(requestSection string, span tracesdk.ReadOnl
 		return
 	}
 
-	fmt.Printf("Redaction Map Kartikay: %+v \n", redactionMap)
-
-	/* eslint-disable keyword-spacing */
-
 	if redactionMap == nil {
 		return
 	}
-
 	spanAttributes := span.Attributes()
-
 	for key, value := range spanAttributes {
 		for _, redactConfig := range redactionMap {
 			if string(value.Key) == redactConfig["attribute_key"] {
-				fmt.Printf("Redaction Config: %+v %+v\n", key, value)
 				data := value.Value.AsString()
 
 				if data == "" {
@@ -141,8 +92,6 @@ func (dr *DataRedaction) redactData(requestSection string, span tracesdk.ReadOnl
 
 				// go over each user defined rules from config and perfrom redaction.
 				for _, regEx := range dr.regexRedaction {
-					fmt.Printf("Redaction Config: %+v %+v\n", redactConfig, regEx)
-
 					redactedData := data
 
 					switch redactConfig["redaction_function"] {
@@ -156,11 +105,7 @@ func (dr *DataRedaction) redactData(requestSection string, span tracesdk.ReadOnl
 						redactedData = dr.redactUriStringData(data, regEx)
 					}
 
-					fmt.Printf("Data -------  %+v", data)
-
 					if data != redactedData {
-
-						fmt.Printf("Aaaaaooooooo nachoooooooooo -------  %+v", redactedData)
 						jsonStr, err := json.Marshal(redactedData)
 						if err != nil {
 							panic(err)
