@@ -19,18 +19,21 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 	log.Printf("Configuration %+v", e.ConfigOptions)
 
 	truncateData := e.ConfigOptions.ConfigOptions.TruncateData
-	if truncateData {
-		plugins.Truncation()
-	}
 
 	redactData := e.ConfigOptions.ConfigOptions.RedactSensitiveData["Enable"]
-	if redactData == true {
-		rules := e.ConfigOptions.ConfigOptions.RedactSensitiveData["Rules"]
-		log.Printf("Rules %+v", rules)
-		plugins.Redaction()
-	}
 
 	for idx, span := range ss {
+
+		if truncateData {
+			plugins.Truncation(span)
+		}
+
+		if redactData == true {
+			rules := e.ConfigOptions.ConfigOptions.RedactSensitiveData["Rules"]
+			log.Printf("Rules %+v", rules)
+			// plugins.Redaction(span, rules)
+		}
+
 		log.Printf("Debug: span number:%d span:%+v", idx, span)
 	}
 	return e.Exporter.ExportSpans(ctx, ss)
