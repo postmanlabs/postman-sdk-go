@@ -2,9 +2,12 @@ package postmansdk
 
 import (
 	"context"
+
 	"fmt"
-	"log"
 	"strings"
+
+	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
+	"github.com/sirupsen/logrus"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -14,7 +17,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	pmexporter "github.com/postmanlabs/postman-go-sdk/postmansdk/exporter"
-	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
 
@@ -31,7 +33,15 @@ func Initialize(
 ) (func(context.Context) error, error) {
 
 	sdkconfig := pminterfaces.InitializeSDKConfig(collectionId, apiKey, options...)
-	log.Printf("SdkConfig is intialized as %+v", sdkconfig)
+
+	// Setting log level
+	if sdkconfig.Options.Debug {
+		pmutils.CreateNewLogger(logrus.DebugLevel)
+	} else {
+		pmutils.CreateNewLogger(logrus.ErrorLevel)
+	}
+
+	pmutils.Log.WithField("sdkconfig", sdkconfig).Info("SdkConfig is intialized")
 
 	psdk = &postmanSDK{
 		Config: sdkconfig,
@@ -42,7 +52,7 @@ func Initialize(
 	shutdown, err := psdk.installExportPipeline(ctx)
 
 	if err != nil {
-		log.Fatal(err)
+		pmutils.Log.WithError(err).Error("Failed to create a new exporter")
 	}
 	return shutdown, nil
 }
@@ -92,7 +102,7 @@ func (psdk *postmanSDK) installExportPipeline(
 		),
 	)
 	if err != nil {
-		log.Println("Could not set resources: ", err)
+		pmutils.Log.WithError(err).Error("Could not set resources")
 	}
 
 	tracerProvider := sdktrace.NewTracerProvider(

@@ -3,9 +3,9 @@ package instrumentations_gin
 import (
 	"bytes"
 	"io"
-	"log"
 
 	"github.com/gin-gonic/gin"
+	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -37,7 +37,7 @@ func getRequestBody(c *gin.Context) string {
 	data, err := io.ReadAll(c.Request.Body)
 
 	if err != nil {
-		log.Println(err)
+		pmutils.Log.WithError(err).Error("Failed to read request body data")
 	}
 
 	// Request Body is an io.ReadCloser stream, which can be read only once, since
