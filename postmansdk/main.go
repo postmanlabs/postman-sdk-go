@@ -6,9 +6,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
-
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -17,7 +14,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	pmexporter "github.com/postmanlabs/postman-go-sdk/postmansdk/exporter"
-	instrumentations_gin "github.com/postmanlabs/postman-go-sdk/postmansdk/instrumentations/gin"
 	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
@@ -25,6 +21,8 @@ import (
 type postmanSDK struct {
 	Config pminterfaces.PostmanSDKConfig
 }
+
+var psdk *postmanSDK
 
 func Initialize(
 	collectionId string,
@@ -35,7 +33,7 @@ func Initialize(
 	sdkconfig := pminterfaces.InitializeSDKConfig(collectionId, apiKey, options...)
 	log.Printf("SdkConfig is intialized as %+v", sdkconfig)
 
-	psdk := &postmanSDK{
+	psdk = &postmanSDK{
 		Config: sdkconfig,
 	}
 
@@ -57,7 +55,7 @@ func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporte
 	client := otlptracehttp.NewClient(
 		otlptracehttp.WithEndpoint(
 			strings.Replace(
-				psdk.Config.ConfigOptions.ReceiverBaseUrl,
+				psdk.Config.Options.ReceiverBaseUrl,
 				"https://",
 				"",
 				1,
@@ -78,7 +76,6 @@ func (psdk *postmanSDK) installExportPipeline(
 	exporter, err := psdk.getOTLPExporter(ctx)
 
 	if err != nil {
-
 		return nil, fmt.Errorf("creating OTLP trace exporter: %w", err)
 	}
 
@@ -91,8 +88,7 @@ func (psdk *postmanSDK) installExportPipeline(
 		resource.WithAttributes(
 			attribute.String("library.language", "go"),
 			attribute.String(
-				pmutils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME,
-				psdk.Config.CollectionId,
+				pmutils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME, psdk.Config.CollectionId,
 			),
 		),
 	)
@@ -104,7 +100,7 @@ func (psdk *postmanSDK) installExportPipeline(
 		sdktrace.WithBatcher(
 			pexporter,
 			sdktrace.WithBatchTimeout(
-				psdk.Config.ConfigOptions.BufferIntervalInMilliseconds,
+				psdk.Config.Options.BufferIntervalInMilliseconds,
 			),
 		),
 		sdktrace.WithResource(resources),
@@ -112,9 +108,4 @@ func (psdk *postmanSDK) installExportPipeline(
 	otel.SetTracerProvider(tracerProvider)
 
 	return tracerProvider.Shutdown, nil
-}
-
-func InstrumentGin(router *gin.Engine) {
-	router.Use(otelgin.Middleware(""))
-	router.Use(instrumentations_gin.Middleware())
 }
