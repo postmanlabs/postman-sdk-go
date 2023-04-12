@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 	"net/http"
 	"time"
 
 	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
+	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
 
 type SdkPayload struct {
@@ -45,7 +45,7 @@ func isRetryable(statusCode int) bool {
 	return false
 }
 
-func CallBootStrapAPI(sdkconfig pminterfaces.PostmanSDKConfig) (bool, error) {
+func Bootstrap(sdkconfig pminterfaces.PostmanSDKConfig) (bool, error) {
 	payload := &bootStrapAPIPaylod{
 		SDK: SdkPayload{
 			CollectionId: sdkconfig.CollectionId,
@@ -60,7 +60,6 @@ func CallBootStrapAPI(sdkconfig pminterfaces.PostmanSDKConfig) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("error in json encoding %v", err)
 	}
-	log.Printf("bootstrap API payload:%v", b)
 
 	client := &http.Client{}
 	req, reqErr := http.NewRequest("POST", url, b)
@@ -82,7 +81,7 @@ func CallBootStrapAPI(sdkconfig pminterfaces.PostmanSDKConfig) (bool, error) {
 
 		defer resp.Body.Close()
 
-		log.Printf("bootstrap API resp.status:%d", resp.StatusCode)
+		pmutils.Log.Debug("bootstrap API resp.status: ", resp.StatusCode)
 
 		var bootResp bootStrapApIResponse
 		decodeErr := json.NewDecoder(resp.Body).Decode(&bootResp)
@@ -94,8 +93,11 @@ func CallBootStrapAPI(sdkconfig pminterfaces.PostmanSDKConfig) (bool, error) {
 				resp.Body,
 				decodeErr,
 			)
-		}else {
-			log.Printf("bootstrap API resp.Body: %+v", bootResp)
+		} else {
+
+			pmutils.Log.Debug(
+				fmt.Sprintf("bootstrap API resp.Body:%+v", bootResp),
+			)
 		}
 		if resp.StatusCode == http.StatusOK {
 
@@ -115,7 +117,7 @@ func CallBootStrapAPI(sdkconfig pminterfaces.PostmanSDKConfig) (bool, error) {
 			return bootResp.CurrentConfig.Enabled, nil
 
 		} else if isRetryable(resp.StatusCode) {
-			log.Printf(
+			pmutils.Log.Debug(
 				"Retry:%d bootstrap API received resp.status:%d",
 				retries,
 				resp.StatusCode,

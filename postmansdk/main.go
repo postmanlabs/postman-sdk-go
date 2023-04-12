@@ -43,22 +43,21 @@ func Initialize(
 		return errorCleanup, fmt.Errorf("postman SDK is not enabled")
 	}
 
-	currentConfig, err := pmreceiver.CallBootStrapAPI(sdkconfig)
-
-	if err != nil {
-		pmutils.Log.Error(err)
-
-		return errorCleanup, fmt.Errorf("bootstrap SDK failed with err:%v", err)
-	}
-
-	sdkconfig.Options.Enable = currentConfig
-
-	// Setting log level
 	if sdkconfig.Options.Debug {
 		pmutils.CreateNewLogger(logrus.DebugLevel)
 	} else {
 		pmutils.CreateNewLogger(logrus.ErrorLevel)
 	}
+
+	bEnable, err := pmreceiver.Bootstrap(sdkconfig)
+
+	if err != nil {
+		pmutils.Log.WithField("error", err).Error("SDK Disabled due to")
+
+		return errorCleanup, fmt.Errorf("bootstrap SDK failed with err:%v", err)
+	}
+
+	sdkconfig.Options.Enable = bEnable
 
 	pmutils.Log.WithField("sdkconfig", sdkconfig).Info("SdkConfig is intialized")
 
