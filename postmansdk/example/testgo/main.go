@@ -13,8 +13,15 @@ func main() {
 
 	apiKey := "REPLACE-THIS"
 	collectionId := "REPLACE-THIS"
+	redactSensitiveData := map[string]interface{}{
+		"Enable": true,
+		"Rules": map[string]interface{}{
+			"rule1": "wonderful",
+		},
+	}
 
-	cleanup := pm.Initialize(collectionId, apiKey, pminterfaces.WithReceiverBaseUrl("REPLACE THIS"))
+	cleanup := pm.Initialize(collectionId, apiKey, pminterfaces.WithReceiverBaseUrl("REPLACE THIS"),
+		pminterfaces.WithRedactSensitiveData(redactSensitiveData))
 	defer cleanup(context.Background())
 
 	router := gin.Default()

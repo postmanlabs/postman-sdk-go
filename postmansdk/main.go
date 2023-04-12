@@ -83,7 +83,7 @@ func (psdk *postmanSDK) installExportPipeline(
 	}
 
 	pexporter := &pmexporter.PostmanExporter{
-		Exporter: *exporter,
+		Exporter:      *exporter,
 		ConfigOptions: psdk.Config,
 	}
 
