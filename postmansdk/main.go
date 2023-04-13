@@ -112,7 +112,7 @@ func (psdk *postmanSDK) installExportPipeline(
 	resources, err := resource.New(
 		context.Background(),
 		resource.WithAttributes(
-			attribute.String("library.language", "go"),
+			attribute.String("telemetry.sdk.language", "go"),
 			attribute.String(
 				pmutils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME, psdk.Config.CollectionId,
 			),
