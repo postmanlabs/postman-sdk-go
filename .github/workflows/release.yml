@@ -34,10 +34,13 @@ jobs:
           echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
 
       - name: Version check result
-        if: steps.latest_tag.outputs.latest_tag == steps.set_tag.outputs.new_tag
         uses: actions/github-script@v3
         with:
           script: |
+            echo "Latest tag:"
+            echo ${{ steps.latest_tag.outputs.latest_tag }}
+            echo "New tag:"
+            echo ${{ steps.set_tag.outputs.new_tag }}
             core.setFailed('Version is not updated - please bump on `version.go`')
 
       - name: Push tag
