@@ -1,9 +1,10 @@
 package interfaces
 
 import (
+	"sync"
 	"time"
 
-	"github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
+	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
 
 const (
@@ -31,9 +32,10 @@ type PostmanSDKConfig struct {
 	ApiKey       string
 	CollectionId string
 	Options      PostmanSDKConfigOptions
+	mu           sync.Mutex
 }
 
-func InitializeSDKConfig(collectionId string, apiKey string, options ...PostmanSDKConfigOption) PostmanSDKConfig {
+func InitializeSDKConfig(collectionId string, apiKey string, options ...PostmanSDKConfigOption) *PostmanSDKConfig {
 
 	o := PostmanSDKConfigOptions{
 		BufferIntervalInMilliseconds: time.Duration(DefaultBufferIntervalInMilliseconds) * time.Millisecond,
@@ -52,12 +54,32 @@ func InitializeSDKConfig(collectionId string, apiKey string, options ...PostmanS
 	}
 
 	// Add a check here for the env config to start/stop the SDK.
-	v, err := utils.GetenvBool(utils.POSTMAN_SDK_ENABLE_ENV_VAR_NAME)
+	v, err := pmutils.GetenvBool(pmutils.POSTMAN_SDK_ENABLE_ENV_VAR_NAME)
 	if err == nil {
 		sdkconfig.Options.Enable = v
 	}
 
-	return *sdkconfig
+	return sdkconfig
+}
+
+func (pc *PostmanSDKConfig) Suppress() {
+	pc.mu.Lock()
+	pmutils.Log.Debug("Suppressing Tracing")
+	pc.Options.Enable = false
+	pc.mu.Unlock()
+}
+
+func (pc *PostmanSDKConfig) Unsuppress() {
+	pc.mu.Lock()
+	pmutils.Log.Debug("UnSuppressing Tracing")
+	pc.Options.Enable = true
+	pc.mu.Unlock()
+}
+
+func (pc *PostmanSDKConfig) IsSuppressed() bool {
+	pc.mu.Lock()
+	defer pc.mu.Unlock()
+	return pc.Options.Enable
 }
 
 func WithBufferIntervalInMilliseconds(bufferMillis int) PostmanSDKConfigOption {
@@ -65,6 +87,7 @@ func WithBufferIntervalInMilliseconds(bufferMillis int) PostmanSDKConfigOption {
 		option.BufferIntervalInMilliseconds = time.Duration(bufferMillis) * time.Millisecond
 	}
 }
+
 func WithDebug(debug bool) PostmanSDKConfigOption {
 	return func(option *PostmanSDKConfigOptions) {
 		option.Debug = debug

@@ -45,7 +45,7 @@ func isRetryable(statusCode int) bool {
 	return false
 }
 
-func Bootstrap(sdkconfig pminterfaces.PostmanSDKConfig) (bool, error) {
+func Bootstrap(sdkconfig *pminterfaces.PostmanSDKConfig) (bool, error) {
 	payload := &bootStrapAPIPaylod{
 		SDK: SdkPayload{
 			CollectionId: sdkconfig.CollectionId,

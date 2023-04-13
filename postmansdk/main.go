@@ -2,7 +2,6 @@ package postmansdk
 
 import (
 	"context"
-
 	"fmt"
 	"strings"
 
@@ -22,7 +21,7 @@ import (
 )
 
 type postmanSDK struct {
-	Config pminterfaces.PostmanSDKConfig
+	Config *pminterfaces.PostmanSDKConfig
 }
 
 var psdk *postmanSDK
@@ -49,20 +48,14 @@ func Initialize(
 		pmutils.CreateNewLogger(logrus.ErrorLevel)
 	}
 
-	bEnable, err := pmreceiver.Bootstrap(sdkconfig)
-
-	if err != nil {
-		pmutils.Log.WithField("error", err).Error("SDK Disabled due to")
-
-		return errorCleanup, fmt.Errorf("bootstrap SDK failed with err:%v", err)
-	}
-
-	sdkconfig.Options.Enable = bEnable
-
 	pmutils.Log.WithField("sdkconfig", sdkconfig).Info("SdkConfig is intialized")
 
 	psdk = &postmanSDK{
 		Config: sdkconfig,
+	}
+
+	if _, err := psdk.updateConfig(); err != nil {
+		return errorCleanup, err
 	}
 
 	ctx := context.Background()
@@ -75,7 +68,26 @@ func Initialize(
 		return errorCleanup, err
 	}
 
+	go pmreceiver.HealthCheck(psdk.Config)
+
 	return shutdown, nil
+}
+
+func (psdk *postmanSDK) updateConfig() (bool, error) {
+	enable, err := pmreceiver.Bootstrap(psdk.Config)
+
+	if err != nil {
+		pmutils.Log.WithField("error", err).Error("SDK disabled due to bootstrap failure")
+		return false, err
+	}
+
+	if !enable {
+		psdk.Config.Suppress()
+	} else {
+		psdk.Config.Unsuppress()
+	}
+
+	return true, nil
 }
 
 func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporter, error) {
