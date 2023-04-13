@@ -99,6 +99,7 @@ func (psdk *postmanSDK) installExportPipeline(
 			attribute.String(
 				pmutils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME, psdk.Config.CollectionId,
 			),
+			attribute.String(pmutils.POSTMAN_SDK_VERSION_ATTRIBUTE_NAME, POSTMAN_SDK_VERSION),
 		),
 	)
 	if err != nil {
