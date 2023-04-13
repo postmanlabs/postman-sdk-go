@@ -1,8 +1,9 @@
 name: Release Go SDK
 
 on:
-  # This needs to change to push to master
-  push
+  push:
+    branches:
+      - master
 
 jobs:
   release:
@@ -21,10 +22,6 @@ jobs:
           echo $latest_tag
           echo "latest_tag=$latest_tag" >> "$GITHUB_OUTPUT"
 
-      - name: Get Previous tag
-        id: previous_tag
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
-
       - name: Get current version
         id: current_version
         uses: michmich112/extract-version@main
@@ -39,16 +36,8 @@ jobs:
           echo $new_tag
           echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
 
-      - name: Pretty Print
-        run: |
-          echo "Latest tag:"
-          echo ${{ steps.latest_tag.outputs.latest_tag }}
-          echo "New tag:"
-          echo ${{ steps.set_tag.outputs.new_tag }}
-          echo "Previous tag:"
-          echo ${{ steps.previous_tag.outputs.tag }}
-
       - name: Version check result
+        if: steps.latest_tag.outputs.latest_tag == steps.set_tag.outputs.new_tag
         uses: actions/github-script@v3
         with:
           script: |
