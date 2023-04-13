@@ -3,7 +3,6 @@ package receiver
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
 	"time"
 
@@ -70,13 +69,9 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 
 			sdkconfig.Suppress()
 			retry += 1
-			delay := time.Duration(math.Pow(EXPONENTIAL_BACKOFF_BASE, float64(retry)))
-			time.Sleep(delay * time.Second)
+			exponentialDelay(retry)
 
-			continue
-		}
-
-		if resp.ar.StatusCode == http.StatusOK {
+		} else if resp.ar.StatusCode == http.StatusOK {
 
 			if resp.ar.DecodeError == nil && resp.Body.Healthy {
 				retry = 0
