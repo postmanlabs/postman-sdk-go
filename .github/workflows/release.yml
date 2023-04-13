@@ -15,7 +15,7 @@ jobs:
       - name: Get latest tag
         id: latest_tag
         run: |
-          latest_tag=$(git tag | sort -V | tail -1)
+          latest_tag=$(git tag | grep v | sort -V | tail -1)
           echo $latest_tag
           echo "latest_tag=$latest_tag" >> "$GITHUB_OUTPUT"
 
