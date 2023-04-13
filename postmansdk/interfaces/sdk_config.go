@@ -92,9 +92,12 @@ func WithTruncateData(truncateData bool) PostmanSDKConfigOption {
 
 	}
 }
-func WithRedactSensitiveData(redactSensitiveData RedactSensitiveDataConfig) PostmanSDKConfigOption {
+func WithRedactSensitiveData(redactionEnable bool, rules map[string]string) PostmanSDKConfigOption {
 	return func(option *PostmanSDKConfigOptions) {
-		option.RedactSensitiveData = redactSensitiveData
+		option.RedactSensitiveData = RedactSensitiveDataConfig{
+			RedactionEnable: redactionEnable,
+			Rules:           rules,
+		}
 	}
 }
 func WithIgnoreOutgoingRequests(ignoreOutgoingRequests []string) PostmanSDKConfigOption {

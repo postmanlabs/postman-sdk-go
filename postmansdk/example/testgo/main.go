@@ -10,18 +10,16 @@ import (
 )
 
 func main() {
-
 	apiKey := "REPLACE-THIS"
 	collectionId := "REPLACE-THIS"
-	redactSensitiveData := pminterfaces.RedactSensitiveDataConfig{
-		Enable: true,
-		Rules: map[string]string{
-			"rule1": "wonderful",
-		},
-	}
+	RedactionEnable := true
+	Rules := map[string]string{}
+	// map[string]string{
+	// 	"rule1": "wonderful",
+	// }
 
 	cleanup, err := pm.Initialize(collectionId, apiKey, pminterfaces.WithReceiverBaseUrl("REPLACE THIS"),
-		pminterfaces.WithRedactSensitiveData(redactSensitiveData))
+		pminterfaces.WithRedactSensitiveData(RedactionEnable, Rules))
 	if err == nil {
 		defer cleanup(context.Background())
 	}
