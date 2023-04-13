@@ -103,7 +103,7 @@ func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporte
 				1,
 			),
 		),
-		otlptracehttp.WithURLPath(pmutils.TRACE_RECEIVER_PATH),
+		otlptracehttp.WithURLPath(pmreceiver.TRACE_RECEIVER_PATH),
 		otlptracehttp.WithHeaders(clientHeaders),
 	)
 	exporter, err := otlptrace.New(ctx, client)

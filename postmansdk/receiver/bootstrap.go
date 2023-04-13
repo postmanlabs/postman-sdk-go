@@ -1,32 +1,29 @@
 package receiver
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
-	"time"
 
 	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
 
-type SdkPayload struct {
-	CollectionId string `json:"collectionId"`
-	Enabled      bool   `json:"enabled"`
-}
-
-type bootStrapAPIPaylod struct {
+type bRequestBody struct {
 	SDK SdkPayload `json:"sdk"`
 }
 
-type bootStrapApIResponse struct {
+type bResponseBody struct {
 	OK            bool   `json:"ok"`
 	Message       string `json:"message"`
 	CurrentConfig struct {
 		Enabled bool `json:"enabled"`
 	}
+}
+
+type bootstrapAPIResponse struct {
+	ar   apiResponse
+	Body bResponseBody
 }
 
 func isRetryable(statusCode int) bool {
@@ -45,99 +42,65 @@ func isRetryable(statusCode int) bool {
 	return false
 }
 
-func Bootstrap(sdkconfig *pminterfaces.PostmanSDKConfig) (bool, error) {
-	payload := &bootStrapAPIPaylod{
+func callBootstrapApi(sdkconfig *pminterfaces.PostmanSDKConfig) bootstrapAPIResponse {
+	payload := bRequestBody{
 		SDK: SdkPayload{
 			CollectionId: sdkconfig.CollectionId,
 			Enabled:      sdkconfig.Options.Enable,
 		},
 	}
-	url := sdkconfig.Options.ReceiverBaseUrl + BOOTSTRAP_PATH
 
-	b := new(bytes.Buffer)
-	err := json.NewEncoder(b).Encode(payload)
+	resp := callApi(BOOTSTRAP_PATH, payload, sdkconfig)
+	defer resp.Body.Close()
+
+	var br bootstrapAPIResponse
+	var body bResponseBody
+	br.ar = resp
+
+	err := json.NewDecoder(resp.Body).Decode(&body)
 
 	if err != nil {
-		return false, fmt.Errorf("error in json encoding %v", err)
+		br.ar.DecodeError = fmt.Errorf("parsing resp.Body:%+v failed:%v", resp.Body, err)
 	}
 
-	client := &http.Client{}
-	req, reqErr := http.NewRequest("POST", url, b)
+	br.Body = body
+	pmutils.Log.Debug(fmt.Printf("Bootstrap API %+v", br))
 
-	if reqErr != nil {
-		return false, fmt.Errorf("error:%v while creating request", reqErr)
-	}
+	return br
+}
 
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("x-api-key", sdkconfig.ApiKey)
+func Bootstrap(sdkconfig *pminterfaces.PostmanSDKConfig) (bool, error) {
 
 	for retries := 0; retries < BOOTSTRAP_RETRY_COUNT; retries++ {
-		resp, err := client.Do(req)
 
-		if err != nil {
-
-			return false, fmt.Errorf("error making request:%v", err)
+		resp := callBootstrapApi(sdkconfig)
+		if resp.ar.Error != nil {
+			pmutils.Log.Debug("Bootstrap API Failed resp: %+v", resp)
+			exponentialDelay(retries)
 		}
 
-		defer resp.Body.Close()
+		if resp.ar.StatusCode == http.StatusOK {
 
-		pmutils.Log.Debug("bootstrap API resp.status: ", resp.StatusCode)
-
-		var bootResp bootStrapApIResponse
-		decodeErr := json.NewDecoder(resp.Body).Decode(&bootResp)
-
-		if decodeErr != nil {
-			decodeErr = fmt.Errorf(
-				"bootstrap API resp.status:%d resp.Body:%+v parsing failed with error:%v",
-				resp.StatusCode,
-				resp.Body,
-				decodeErr,
-			)
-		} else {
-
-			pmutils.Log.Debug(
-				fmt.Sprintf("bootstrap API resp.Body:%+v", bootResp),
-			)
-		}
-		if resp.StatusCode == http.StatusOK {
-
-			if decodeErr != nil {
-				return false, decodeErr
-			}
-
-			if !bootResp.OK {
-
+			if resp.ar.DecodeError != nil && !resp.Body.OK {
 				return false, fmt.Errorf(
 					"non OK bootstrap API resp.status:%v resp.body: %+v",
-					resp.StatusCode,
-					bootResp,
+					resp.ar.StatusCode,
+					resp.Body,
 				)
 			}
 
-			return bootResp.CurrentConfig.Enabled, nil
+			return resp.Body.CurrentConfig.Enabled, nil
 
-		} else if isRetryable(resp.StatusCode) {
+		} else if isRetryable(resp.ar.StatusCode) {
 			pmutils.Log.Debug(
 				"Retry:%d bootstrap API received resp.status:%d",
 				retries,
-				resp.StatusCode,
+				resp.ar.StatusCode,
 			)
+			exponentialDelay(retries)
 
-			delay := time.Duration(math.Pow(EXPONENTIAL_BACKOFF_BASE, float64(retries)))
-
-			time.Sleep(delay * time.Second)
-			continue
 		} else {
-			if decodeErr != nil {
-				return false,
-					fmt.Errorf("bootstrap failed resp.status:%d", resp.StatusCode)
-			}
-			return false,
-				fmt.Errorf(
-					"bootstrap failed resp.status:%d, resp.Body:%+v",
-					resp.StatusCode,
-					bootResp,
-				)
+			return false, fmt.Errorf("unhandled status code bootstrap API resp:%+v", resp)
 		}
 
 	}

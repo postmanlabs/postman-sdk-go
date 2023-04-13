@@ -1,7 +1,6 @@
 package receiver
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -12,78 +11,46 @@ import (
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
 
-type healthCheckAPIPayload struct {
+type hRequestBody struct {
 	SDK SdkPayload `json:"sdk"`
 }
 
-type healthCheckApiResponse struct {
+type hResponseBody struct {
 	Healthy bool                     `json:"healthy"`
 	Message string                   `json:"message"`
 	Data    []map[string]interface{} `json:"data"`
 }
 
-type hcResp struct {
-	StatusCode int
-	Body       healthCheckApiResponse
-	Error      error
+type healthcheckAPIResponse struct {
+	ar   apiResponse
+	Body hResponseBody
 }
 
-func callHealthApi(sdkconfig *pminterfaces.PostmanSDKConfig) hcResp {
-	payload := &healthCheckAPIPayload{
+func callHealthApi(sdkconfig *pminterfaces.PostmanSDKConfig) healthcheckAPIResponse {
+	payload := hRequestBody{
 		SDK: SdkPayload{
 			CollectionId: sdkconfig.CollectionId,
 			Enabled:      sdkconfig.Options.Enable,
 		},
 	}
-	url := sdkconfig.Options.ReceiverBaseUrl + HEALTHCHECK_PATH
 
-	var hr hcResp
+	resp := callApi(HEALTHCHECK_PATH, payload, sdkconfig)
 
-	b := new(bytes.Buffer)
-	err := json.NewEncoder(b).Encode(payload)
+	defer resp.Body.Close()
 
-	if err != nil {
-		hr.Error = fmt.Errorf("error:%v in encoding payload", err)
-		return hr
-	}
+	var hr healthcheckAPIResponse
+	var hbody hResponseBody
 
-	client := &http.Client{}
-	req, reqErr := http.NewRequest("POST", url, b)
-
-	if reqErr != nil {
-		hr.Error = fmt.Errorf("error:%v while creating request", reqErr)
-		return hr
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("x-api-key", sdkconfig.ApiKey)
-
-	resp, err := client.Do(req)
+	err := json.NewDecoder(resp.Body).Decode(&hbody)
 
 	if err != nil {
-		hr.Error = fmt.Errorf("HTTP call failed: %v", err)
-		return hr
+		hr.ar.DecodeError = fmt.Errorf("parsing resp.Body:%+v failed:%v", hr.ar.Body, err)
 	}
-	body, berr := decodeBody(resp)
 
-	hr.Error = berr
-	hr.Body = body
+	hr.Body = hbody
 	pmutils.Log.Debug(fmt.Printf("Healtcheck API %+v", hr))
 
 	return hr
-}
-
-func decodeBody(resp *http.Response) (healthCheckApiResponse, error) {
-	defer resp.Body.Close()
-	var healthResp healthCheckApiResponse
-	err := json.NewDecoder(resp.Body).Decode(&healthResp)
-
-	if err != nil {
-		return healthResp, fmt.Errorf("parsing resp.Body:%+v failed:%v", resp.Body, err)
-	}
-
-	return healthResp, nil
-
 }
 
 func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
@@ -98,22 +65,26 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 
 		resp := callHealthApi(sdkconfig)
 
-		if resp.Error != nil {
-			pmutils.Log.Debug("Healthcheck API failed: %v", resp.Error)
-			// this will also retry on JSON parsing failed
-			// should this be done ?
+		if resp.ar.Error != nil {
+			pmutils.Log.Debug("Healthcheck API failed: %v", resp.ar.Error)
+
+			sdkconfig.Suppress()
+			retry += 1
+			delay := time.Duration(math.Pow(EXPONENTIAL_BACKOFF_BASE, float64(retry)))
+			time.Sleep(delay * time.Second)
+
 			continue
 		}
 
-		if resp.StatusCode == http.StatusOK {
+		if resp.ar.StatusCode == http.StatusOK {
 
-			if resp.Body.Healthy {
+			if resp.ar.DecodeError == nil && resp.Body.Healthy {
 				retry = 0
 				sdkconfig.Unsuppress()
 			}
 
 			time.Sleep(DEFAULT_HEALTH_PING_INTERVAL_SECONDS * time.Second)
-		} else if resp.StatusCode == http.StatusConflict {
+		} else if resp.ar.StatusCode == http.StatusConflict {
 			br, err := Bootstrap(sdkconfig)
 
 			if err != nil {
@@ -129,9 +100,9 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 
 			time.Sleep(DEFAULT_HEALTH_PING_INTERVAL_SECONDS * time.Second)
 
-		} else if resp.StatusCode == http.StatusNotFound {
+		} else if resp.ar.StatusCode == http.StatusNotFound {
 
-			if resp.Error == nil && !resp.Body.Healthy {
+			if resp.ar.DecodeError == nil && !resp.Body.Healthy {
 				br, err := Bootstrap(sdkconfig)
 				if err != nil {
 					sdkconfig.Suppress()
@@ -154,13 +125,9 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 			}
 
 		} else {
-
-			// pass to channel self.postman_tracer.suppress()
 			sdkconfig.Suppress()
-
 			retry += 1
-			delay := time.Duration(math.Pow(EXPONENTIAL_BACKOFF_BASE, float64(retry)))
-			time.Sleep(delay * time.Second)
+			exponentialDelay(retry)
 		}
 	}
 
