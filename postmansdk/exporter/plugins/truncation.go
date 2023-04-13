@@ -2,17 +2,17 @@ package plugins
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 
+	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 	"go.opentelemetry.io/otel/attribute"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 )
 
-var DEFAULT_DATA_TRUNCATION_LEVEL int = 2
+var DEFAULT_DATA_TRUNCATION_LEVEL = 2
 
-func Truncation(span tracesdk.ReadOnlySpan) {
-	fmt.Println("We are truncating the data")
+func Truncate(span tracesdk.ReadOnlySpan) {
+	pmutils.Log.Debug("Truncating data for span : %+v ", span)
 
 	spanHttpBodyAttributesName := map[string]interface{}{
 		"response": "http.response.body",
@@ -21,29 +21,29 @@ func Truncation(span tracesdk.ReadOnlySpan) {
 
 	spanAttributes := span.Attributes()
 
-	for key, value := range spanAttributes {
+	for k, v := range spanAttributes {
 		for attributeType, attributeName := range spanHttpBodyAttributesName {
-			if string(value.Key) == attributeName {
+			if string(v.Key) == attributeName {
 
-				fmt.Printf("Running truncation for %+v at %+v \n", attributeType, attributeName)
+				pmutils.Log.Debug("Running truncation for %+v at %+v \n", attributeType, attributeName)
 
-				data := spanAttributes[key].Value.AsString()
+				data := spanAttributes[k].Value.AsString()
 
 				var finalData interface{}
 
 				err := json.Unmarshal([]byte(data), &finalData)
 				if err != nil {
-					panic(err)
+					pmutils.Log.Debug(err)
 				}
 
 				truncatedData := trimBodyValuesToTypes(finalData, 1)
 
-				jsonStr, err := json.Marshal(truncatedData)
+				jsonData, err := json.Marshal(truncatedData)
 				if err != nil {
-					panic(err)
+					pmutils.Log.Debug(err)
 				}
 
-				spanAttributes[key].Value = attribute.StringValue(string(jsonStr))
+				spanAttributes[k].Value = attribute.StringValue(string(jsonData))
 			}
 		}
 	}
@@ -65,9 +65,17 @@ func trimBodyValuesToTypes(data interface{}, currentLevel int) interface{} {
 			return data
 		}
 		data = parsedData
+
 	case []interface{}:
 		trimmedBody := make([]interface{}, 0)
 		for _, value := range data.([]interface{}) {
+			/*
+				Using reflect.TypeOf(value).Kind() as it provides the most generic and direct comparison to types like
+				reflect.Map orreflect.Slice.
+				We enter this code block only when the current data type is slice. If, we find complex data further,
+				recursive function is called, else the current data type is assigned. Since, we are limiting the
+				truncation level to 2, that is also taken here.
+			*/
 			if currentLevel <= DEFAULT_DATA_TRUNCATION_LEVEL && value != nil && reflect.TypeOf(value).Kind() == reflect.Map {
 				trimmedBody = append(trimmedBody, trimBodyValuesToTypes(value, currentLevel+1))
 			} else if value == nil {
@@ -77,9 +85,15 @@ func trimBodyValuesToTypes(data interface{}, currentLevel int) interface{} {
 			}
 		}
 		return trimmedBody
+
 	case map[string]interface{}:
 		trimmedBody := make(map[string]interface{})
 		for key, value := range data.(map[string]interface{}) {
+			/*
+				Similarly, we enter this code block only when the current data type is map. If, we find complex data further,
+				recursive function is called, else the current data type is assigned. Since, we are limiting the
+				truncation level to 2, that is also taken here.
+			*/
 			if currentLevel <= DEFAULT_DATA_TRUNCATION_LEVEL && value != nil && reflect.TypeOf(value).Kind() == reflect.Map {
 				trimmedBody[key] = trimBodyValuesToTypes(value, currentLevel+1)
 			} else if value == nil {
@@ -89,6 +103,7 @@ func trimBodyValuesToTypes(data interface{}, currentLevel int) interface{} {
 			}
 		}
 		return trimmedBody
+
 	default:
 		return data
 	}

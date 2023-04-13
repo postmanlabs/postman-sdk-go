@@ -2,7 +2,6 @@ package exporter
 
 import (
 	"context"
-	"log"
 
 	plugins "github.com/postmanlabs/postman-go-sdk/postmansdk/exporter/plugins"
 	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
@@ -13,27 +12,26 @@ import (
 
 type PostmanExporter struct {
 	otlptrace.Exporter
-	ConfigOptions pminterfaces.PostmanSDKConfig
+	Config pminterfaces.PostmanSDKConfig
 }
 
 func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnlySpan) error {
-	log.Printf("Configuration %+v", e.ConfigOptions)
+	pmutils.Log.Debug("Configuration %+v", e.Config)
 
-	truncateData := e.ConfigOptions.Options.TruncateData
-
-	redactData := e.ConfigOptions.Options.RedactSensitiveData["Enable"]
+	truncateDataFlag := e.Config.Options.TruncateData
+	redactDataFlag := e.Config.Options.RedactSensitiveData.Enable
 
 	pmutils.Log.Debug("Spans to be exported are")
 
 	for idx, span := range ss {
 
-		if truncateData {
-			plugins.Truncation(span)
+		if truncateDataFlag {
+			plugins.Truncate(span)
 		}
 
-		if redactData == true {
-			rules := e.ConfigOptions.Options.RedactSensitiveData["Rules"]
-			log.Printf("Rules %+v", rules)
+		if redactDataFlag {
+			rules := e.Config.Options.RedactSensitiveData.Rules
+			pmutils.Log.Debug("Rules %+v", rules)
 			// plugins.Redaction(span, rules)
 		}
 

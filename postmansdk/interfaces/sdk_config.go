@@ -22,7 +22,7 @@ type PostmanSDKConfigOptions struct {
 	Enable                       bool
 	ReceiverBaseUrl              string
 	TruncateData                 bool
-	RedactSensitiveData          map[string]interface{}
+	RedactSensitiveData          RedactSensitiveDataConfig
 	IgnoreOutgoingRequests       []string
 	IgnoreIncomingRequests       []string
 }
@@ -31,6 +31,11 @@ type PostmanSDKConfig struct {
 	ApiKey       string
 	CollectionId string
 	Options      PostmanSDKConfigOptions
+}
+
+type RedactSensitiveDataConfig struct {
+	Enable bool
+	Rules  map[string]string
 }
 
 func InitializeSDKConfig(collectionId string, apiKey string, options ...PostmanSDKConfigOption) PostmanSDKConfig {
@@ -87,7 +92,7 @@ func WithTruncateData(truncateData bool) PostmanSDKConfigOption {
 
 	}
 }
-func WithRedactSensitiveData(redactSensitiveData map[string]interface{}) PostmanSDKConfigOption {
+func WithRedactSensitiveData(redactSensitiveData RedactSensitiveDataConfig) PostmanSDKConfigOption {
 	return func(option *PostmanSDKConfigOptions) {
 		option.RedactSensitiveData = redactSensitiveData
 	}
