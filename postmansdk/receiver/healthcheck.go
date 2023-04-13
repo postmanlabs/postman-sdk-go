@@ -39,6 +39,7 @@ func callHealthApi(sdkconfig *pminterfaces.PostmanSDKConfig) healthcheckAPIRespo
 
 	var hr healthcheckAPIResponse
 	var hbody hResponseBody
+	hr.ar = resp
 
 	err := json.NewDecoder(resp.Body).Decode(&hbody)
 
@@ -84,7 +85,7 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 
 		} else if resp.ar.StatusCode == http.StatusConflict {
 
-			if _, err := updateConfig(sdkconfig); err != nil {
+			if err := updateConfig(sdkconfig); err != nil {
 				pmutils.Log.Debug("Shutting down healthcheck")
 
 				return
@@ -96,7 +97,7 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 			// Healthcheck received without bootstrapping
 			if resp.ar.DecodeError == nil && !resp.Body.Healthy {
 
-				if _, err := updateConfig(sdkconfig); err != nil {
+				if err := updateConfig(sdkconfig); err != nil {
 					pmutils.Log.Debug("Shutting down healthcheck")
 
 					return
@@ -115,19 +116,20 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 		} else {
 			sdkconfig.Suppress()
 			retry += 1
+			pmutils.Log.Debug(fmt.Printf("Retrying healthcheck %d", retry))
 			exponentialDelay(retry)
 		}
 	}
 
 }
 
-func updateConfig(pc *pminterfaces.PostmanSDKConfig) (bool, error) {
+func updateConfig(pc *pminterfaces.PostmanSDKConfig) error {
 	enable, err := Bootstrap(pc)
 
 	if err != nil {
 		pc.Suppress()
 		pmutils.Log.WithField("error", err).Error("SDK disabled due to bootstrap failure")
-		return false, err
+		return err
 	}
 
 	if !enable {
@@ -136,5 +138,5 @@ func updateConfig(pc *pminterfaces.PostmanSDKConfig) (bool, error) {
 		pc.Unsuppress()
 	}
 
-	return true, nil
+	return nil
 }
