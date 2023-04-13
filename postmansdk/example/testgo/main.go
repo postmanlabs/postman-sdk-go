@@ -13,20 +13,19 @@ func main() {
 
 	apiKey := "REPLACE-THIS"
 	collectionId := "REPLACE-THIS"
-	redactSensitiveData := map[string]interface{}{
-		"Enable": true,
-		"Rules": map[string]interface{}{
+	redactSensitiveData := pminterfaces.RedactSensitiveDataConfig{
+		Enable: true,
+		Rules: map[string]string{
 			"rule1": "wonderful",
 		},
 	}
 
 	cleanup, err := pm.Initialize(collectionId, apiKey, pminterfaces.WithReceiverBaseUrl("REPLACE THIS"),
 		pminterfaces.WithRedactSensitiveData(redactSensitiveData))
-
 	if err == nil {
 		defer cleanup(context.Background())
-		// pm.InstrumentGin(router)
 	}
+
 	router := gin.Default()
 
 	// Otel patch

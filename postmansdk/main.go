@@ -89,8 +89,8 @@ func (psdk *postmanSDK) installExportPipeline(
 	}
 
 	pexporter := &pmexporter.PostmanExporter{
-		Exporter:      *exporter,
-		ConfigOptions: psdk.Config,
+		Exporter: *exporter,
+		Config:   psdk.Config,
 	}
 
 	resources, err := resource.New(

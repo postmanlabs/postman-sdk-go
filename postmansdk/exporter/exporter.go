@@ -14,15 +14,14 @@ import (
 
 type PostmanExporter struct {
 	otlptrace.Exporter
-	ConfigOptions pminterfaces.PostmanSDKConfig
+	Config pminterfaces.PostmanSDKConfig
 }
 
 func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnlySpan) error {
-	log.Printf("Configuration %+v", e.ConfigOptions)
+	pmutils.Log.Debug("Configuration %+v", e.Config)
 
-	truncateData := e.ConfigOptions.Options.TruncateData
-
-	redactData := e.ConfigOptions.Options.RedactSensitiveData["Enable"]
+	truncateDataFlag := e.Config.Options.TruncateData
+	redactDataFlag := e.Config.Options.RedactSensitiveData.Enable
 
 	pmutils.Log.Debug("Spans to be exported are")
 
@@ -33,14 +32,14 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 			}
 		}()
 
-		if truncateData {
-			plugins.Truncation(span)
+		if truncateDataFlag {
+			plugins.Truncate(span)
 		}
 
-		if (redactData == true || redactData == nil) && e.ConfigOptions.Options.RedactSensitiveData["available"] == true {
-			rules := e.ConfigOptions.Options.RedactSensitiveData["Rules"]
+		if redactDataFlag && e.Config.Options.RedactSensitiveData.Available {
+			rules := e.Config.Options.RedactSensitiveData.Rules
 			if rules == nil {
-				rules = make(map[string]interface{})
+				rules = make(map[string]string)
 			}
 
 			plugins.Redaction(span, rules)
