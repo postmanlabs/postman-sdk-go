@@ -76,7 +76,8 @@ func trimBodyValuesToTypes(data interface{}, currentLevel int) interface{} {
 				recursive function is called, else the current data type is assigned. Since, we are limiting the
 				truncation level to 2, that is also taken here.
 			*/
-			if currentLevel <= DEFAULT_DATA_TRUNCATION_LEVEL && value != nil && reflect.TypeOf(value).Kind() == reflect.Map {
+			if currentLevel <= DEFAULT_DATA_TRUNCATION_LEVEL && value != nil &&
+				(reflect.TypeOf(value).Kind() == reflect.Map || reflect.TypeOf(value).Kind() == reflect.Slice) {
 				trimmedBody = append(trimmedBody, trimBodyValuesToTypes(value, currentLevel+1))
 			} else if value == nil {
 				trimmedBody = append(trimmedBody, map[string]interface{}{"type": nil})
@@ -94,7 +95,8 @@ func trimBodyValuesToTypes(data interface{}, currentLevel int) interface{} {
 				recursive function is called, else the current data type is assigned. Since, we are limiting the
 				truncation level to 2, that is also taken here.
 			*/
-			if currentLevel <= DEFAULT_DATA_TRUNCATION_LEVEL && value != nil && reflect.TypeOf(value).Kind() == reflect.Map {
+			if currentLevel <= DEFAULT_DATA_TRUNCATION_LEVEL && value != nil &&
+				(reflect.TypeOf(value).Kind() == reflect.Map || reflect.TypeOf(value).Kind() == reflect.Slice) {
 				trimmedBody[key] = trimBodyValuesToTypes(value, currentLevel+1)
 			} else if value == nil {
 				trimmedBody[key] = map[string]interface{}{"type": nil}
