@@ -58,7 +58,9 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 		retry := 0
 
 		if retry > HEALTH_CHECK_ERROR_COUNT_THRESHOLD {
+			sdkconfig.Suppress()
 			pmutils.Log.Debug("Max retries exceeded disabling Healthcheck")
+
 			return
 		}
 
@@ -79,36 +81,27 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 			}
 
 			time.Sleep(DEFAULT_HEALTH_PING_INTERVAL_SECONDS * time.Second)
-		} else if resp.ar.StatusCode == http.StatusConflict {
-			br, err := Bootstrap(sdkconfig)
 
-			if err != nil {
-				sdkconfig.Suppress()
+		} else if resp.ar.StatusCode == http.StatusConflict {
+
+			if _, err := updateConfig(sdkconfig); err != nil {
 				pmutils.Log.Debug("Shutting down healthcheck")
+
 				return
-			}
-			if !br {
-				sdkconfig.Suppress()
-			} else {
-				sdkconfig.Unsuppress()
 			}
 
 			time.Sleep(DEFAULT_HEALTH_PING_INTERVAL_SECONDS * time.Second)
 
 		} else if resp.ar.StatusCode == http.StatusNotFound {
-
+			// Healthcheck received without bootstrapping
 			if resp.ar.DecodeError == nil && !resp.Body.Healthy {
-				br, err := Bootstrap(sdkconfig)
-				if err != nil {
-					sdkconfig.Suppress()
+
+				if _, err := updateConfig(sdkconfig); err != nil {
 					pmutils.Log.Debug("Shutting down healthcheck")
+
 					return
 				}
-				if !br {
-					sdkconfig.Suppress()
-				} else {
-					sdkconfig.Unsuppress()
-				}
+
 				time.Sleep(DEFAULT_HEALTH_PING_INTERVAL_SECONDS * time.Second)
 
 			} else {
@@ -126,4 +119,22 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 		}
 	}
 
+}
+
+func updateConfig(pc *pminterfaces.PostmanSDKConfig) (bool, error) {
+	enable, err := Bootstrap(pc)
+
+	if err != nil {
+		pc.Suppress()
+		pmutils.Log.WithField("error", err).Error("SDK disabled due to bootstrap failure")
+		return false, err
+	}
+
+	if !enable {
+		pc.Suppress()
+	} else {
+		pc.Unsuppress()
+	}
+
+	return true, nil
 }

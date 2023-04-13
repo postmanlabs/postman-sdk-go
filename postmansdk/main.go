@@ -77,6 +77,7 @@ func (psdk *postmanSDK) updateConfig() (bool, error) {
 	enable, err := pmreceiver.Bootstrap(psdk.Config)
 
 	if err != nil {
+		psdk.Config.Suppress()
 		pmutils.Log.WithField("error", err).Error("SDK disabled due to bootstrap failure")
 		return false, err
 	}
