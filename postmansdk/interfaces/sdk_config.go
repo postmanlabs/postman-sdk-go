@@ -89,6 +89,7 @@ func WithTruncateData(truncateData bool) PostmanSDKConfigOption {
 }
 func WithRedactSensitiveData(redactSensitiveData map[string]interface{}) PostmanSDKConfigOption {
 	return func(option *PostmanSDKConfigOptions) {
+		redactSensitiveData["available"] = true
 		option.RedactSensitiveData = redactSensitiveData
 	}
 }

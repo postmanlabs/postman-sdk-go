@@ -37,12 +37,16 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 			plugins.Truncation(span)
 		}
 
-		if redactData == true || (redactData == nil && e.ConfigOptions.Options.RedactSensitiveData["Rules"] != nil) {
+		if (redactData == true || redactData == nil) && e.ConfigOptions.Options.RedactSensitiveData["available"] == true {
 			rules := e.ConfigOptions.Options.RedactSensitiveData["Rules"]
+			if rules == nil {
+				rules = make(map[string]interface{})
+			}
+
 			plugins.Redaction(span, rules)
 			log.Printf("Rules %+v", rules)
 		}
-
+		log.Printf("Debug: span number:%d span:%+v", idx, span)
 		pmutils.Log.Debug("Span number:%d span:%+v", idx, span)
 	}
 	return e.Exporter.ExportSpans(ctx, ss)
