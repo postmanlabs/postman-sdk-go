@@ -2,12 +2,12 @@ package postmansdk
 
 import (
 	"context"
+
 	"fmt"
-	"log"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
+	"github.com/sirupsen/logrus"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -17,8 +17,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	pmexporter "github.com/postmanlabs/postman-go-sdk/postmansdk/exporter"
-	instrumentations_gin "github.com/postmanlabs/postman-go-sdk/postmansdk/instrumentations/gin"
-	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
 
@@ -26,16 +24,26 @@ type postmanSDK struct {
 	Config pminterfaces.PostmanSDKConfig
 }
 
+var psdk *postmanSDK
+
 func Initialize(
 	collectionId string,
 	apiKey string,
 	options ...pminterfaces.PostmanSDKConfigOption,
-) func(context.Context) error {
+) (func(context.Context) error, error) {
 
 	sdkconfig := pminterfaces.InitializeSDKConfig(collectionId, apiKey, options...)
-	log.Printf("SdkConfig is intialized as %+v", sdkconfig)
 
-	psdk := &postmanSDK{
+	// Setting log level
+	if sdkconfig.Options.Debug {
+		pmutils.CreateNewLogger(logrus.DebugLevel)
+	} else {
+		pmutils.CreateNewLogger(logrus.ErrorLevel)
+	}
+
+	pmutils.Log.WithField("sdkconfig", sdkconfig).Info("SdkConfig is intialized")
+
+	psdk = &postmanSDK{
 		Config: sdkconfig,
 	}
 
@@ -44,10 +52,9 @@ func Initialize(
 	shutdown, err := psdk.installExportPipeline(ctx)
 
 	if err != nil {
-		log.Fatal(err)
+		pmutils.Log.WithError(err).Error("Failed to create a new exporter")
 	}
-	return shutdown
-
+	return shutdown, nil
 }
 
 func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporter, error) {
@@ -57,7 +64,7 @@ func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporte
 	client := otlptracehttp.NewClient(
 		otlptracehttp.WithEndpoint(
 			strings.Replace(
-				psdk.Config.ConfigOptions.ReceiverBaseUrl,
+				psdk.Config.Options.ReceiverBaseUrl,
 				"https://",
 				"",
 				1,
@@ -78,7 +85,6 @@ func (psdk *postmanSDK) installExportPipeline(
 	exporter, err := psdk.getOTLPExporter(ctx)
 
 	if err != nil {
-
 		return nil, fmt.Errorf("creating OTLP trace exporter: %w", err)
 	}
 
@@ -92,20 +98,19 @@ func (psdk *postmanSDK) installExportPipeline(
 		resource.WithAttributes(
 			attribute.String("library.language", "go"),
 			attribute.String(
-				pmutils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME,
-				psdk.Config.CollectionId,
+				pmutils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME, psdk.Config.CollectionId,
 			),
 		),
 	)
 	if err != nil {
-		log.Println("Could not set resources: ", err)
+		pmutils.Log.WithError(err).Error("Could not set resources")
 	}
 
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(
 			pexporter,
 			sdktrace.WithBatchTimeout(
-				psdk.Config.ConfigOptions.BufferIntervalInMilliseconds,
+				psdk.Config.Options.BufferIntervalInMilliseconds,
 			),
 		),
 		sdktrace.WithResource(resources),
@@ -113,9 +118,4 @@ func (psdk *postmanSDK) installExportPipeline(
 	otel.SetTracerProvider(tracerProvider)
 
 	return tracerProvider.Shutdown, nil
-}
-
-func InstrumentGin(router *gin.Engine) {
-	router.Use(otelgin.Middleware(""))
-	router.Use(instrumentations_gin.Middleware())
 }
