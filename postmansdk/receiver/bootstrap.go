@@ -50,7 +50,7 @@ func callBootstrapApi(sdkconfig *pminterfaces.PostmanSDKConfig) bootstrapApiResp
 		},
 	}
 
-	resp := callApi(BOOTSTRAP_PATH, payload, sdkconfig)
+	resp := makePostRequest(BOOTSTRAP_PATH, payload, sdkconfig)
 	defer resp.Body.Close()
 
 	var br bootstrapApiResponse

@@ -54,6 +54,7 @@ func Initialize(
 		Config: sdkconfig,
 	}
 
+	// Register live collection
 	if err := pmreceiver.UpdateConfig(sdkconfig); err != nil {
 		return errorCleanup, err
 	}

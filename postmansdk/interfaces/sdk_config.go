@@ -63,17 +63,17 @@ func InitializeSDKConfig(collectionId string, apiKey string, options ...PostmanS
 }
 
 func (pc *PostmanSDKConfig) Suppress() {
-	pc.mu.Lock()
 	pmutils.Log.Debug("Suppressing Tracing")
+	pc.mu.Lock()
+	defer pc.mu.Unlock()
 	pc.Options.Enable = false
-	pc.mu.Unlock()
 }
 
 func (pc *PostmanSDKConfig) Unsuppress() {
-	pc.mu.Lock()
 	pmutils.Log.Debug("UnSuppressing Tracing")
+	pc.mu.Lock()
+	defer pc.mu.Unlock()
 	pc.Options.Enable = true
-	pc.mu.Unlock()
 }
 
 func (pc *PostmanSDKConfig) IsSuppressed() bool {

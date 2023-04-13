@@ -33,7 +33,7 @@ func callHealthApi(sdkconfig *pminterfaces.PostmanSDKConfig) healthcheckApiRespo
 		},
 	}
 
-	resp := callApi(HEALTHCHECK_PATH, payload, sdkconfig)
+	resp := makePostRequest(HEALTHCHECK_PATH, payload, sdkconfig)
 
 	defer resp.Body.Close()
 

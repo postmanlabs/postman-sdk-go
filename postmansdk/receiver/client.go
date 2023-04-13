@@ -24,7 +24,7 @@ type apiResponse struct {
 	DecodeError error
 }
 
-func callApi(urlPath string, payload interface{}, sdkconfig *pminterfaces.PostmanSDKConfig) apiResponse {
+func makePostRequest(urlPath string, payload interface{}, sdkconfig *pminterfaces.PostmanSDKConfig) apiResponse {
 
 	var ar apiResponse
 	jsonbytes := new(bytes.Buffer)
