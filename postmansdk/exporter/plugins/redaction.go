@@ -2,16 +2,15 @@ package plugins
 
 import (
 	"encoding/json"
-	"fmt"
 	"regexp"
 
+	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 	"go.opentelemetry.io/otel/attribute"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 )
 
-func Redaction(span tracesdk.ReadOnlySpan, rules interface{}) {
-
-	fmt.Println("Redacting the given spans.")
+func Redaction(span tracesdk.ReadOnlySpan, rules map[string]string) {
+	pmutils.Log.Info("Running redaction for span: %+v ", span)
 	dr := DataRedaction{regexRedaction: make(map[string]*regexp.Regexp)}
 	dr.compileRules(rules)
 	dr.runRedaction(span)
@@ -21,38 +20,27 @@ type DataRedaction struct {
 	regexRedaction map[string]*regexp.Regexp
 }
 
-func (dr *DataRedaction) compileRules(rules interface{}) {
-
-	combinedRules := make(map[string]interface{})
-
+func (dr *DataRedaction) compileRules(rules map[string]string) {
+	combinedRules := make(map[string]string)
 	for k, v := range defaultRedactionRules {
 		combinedRules[k] = v
 	}
 	// Making sure that user rules are given priority.
 	// In case of conflict, the items from rules will override the DEFAULT_REDACTION_RULES.
 
-	ruleMap := rules.(map[string]interface{})
-	for k, v := range ruleMap {
+	for k, v := range rules {
 		combinedRules[k] = v
 	}
 
 	for rlName, regexRuleCompiled := range combinedRules {
-		dr.regexRedaction[rlName] = regexp.MustCompile("(?i)" + regexRuleCompiled.(string))
+		dr.regexRedaction[rlName] = regexp.MustCompile("(?i)" + regexRuleCompiled)
 	}
 }
 
 func (dr *DataRedaction) runRedaction(span tracesdk.ReadOnlySpan) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("Unable to perform redaction error %v\n", r)
-		}
-	}()
-
 	for _, requestSection := range []string{"request", "response"} {
 		dr.redactData(requestSection, span)
 	}
-
-	// attributes[POSTMAN_DATA_REDACTION_SPAN_ATTRIBUTE] = "true"
 }
 
 func (dr *DataRedaction) redactData(requestSection string, span tracesdk.ReadOnlySpan) {
@@ -60,13 +48,13 @@ func (dr *DataRedaction) redactData(requestSection string, span tracesdk.ReadOnl
 	var requestRedactionRuleSet map[string]map[string]string
 	err := json.Unmarshal([]byte(requestRedactionMap), &requestRedactionRuleSet)
 	if err != nil {
-		panic(err)
+		pmutils.Log.WithError(err).Error("Issue while reading the request redaction map.")
 	}
 
 	var responseRedactionRuleSet map[string]map[string]string
 	errr := json.Unmarshal([]byte(responseRedactionMap), &responseRedactionRuleSet)
 	if errr != nil {
-		panic(err)
+		pmutils.Log.WithError(err).Error("Issue while reading the response redaction map.")
 	}
 
 	if requestSection == "request" {
@@ -80,12 +68,12 @@ func (dr *DataRedaction) redactData(requestSection string, span tracesdk.ReadOnl
 	if redactionMap == nil {
 		return
 	}
+
 	spanAttributes := span.Attributes()
 	for key, value := range spanAttributes {
 		for _, redactConfig := range redactionMap {
 			if string(value.Key) == redactConfig["attribute_key"] {
 				data := value.Value.AsString()
-
 				if data == "" {
 					continue
 				}
@@ -108,21 +96,19 @@ func (dr *DataRedaction) redactData(requestSection string, span tracesdk.ReadOnl
 					if data != redactedData {
 						jsonStr, err := json.Marshal(redactedData)
 						if err != nil {
-							panic(err)
+							pmutils.Log.WithError(err).Error("Issue while pasring the redacted data.")
 						}
 
 						spanAttributes[key].Value = attribute.StringValue(string(jsonStr))
-
 						data = redactedData
 					}
-
 				}
 			}
 		}
 	}
 }
 
-func (dr *DataRedaction) __obfuscateJSONString(jsonString string, regexCompiled *regexp.Regexp) string {
+func (dr *DataRedaction) obfuscateJSONString(jsonString string, regexCompiled *regexp.Regexp) string {
 	jsonObj := make(map[string]interface{})
 
 	err := json.Unmarshal([]byte(jsonString), &jsonObj)
@@ -136,6 +122,7 @@ func (dr *DataRedaction) __obfuscateJSONString(jsonString string, regexCompiled 
 		if strVal, ok := val.(string); ok {
 			dataVal = strVal
 		} else {
+			// If the available data is not string, and of some complex type.
 			valBytes, err := json.Marshal(val)
 			if err != nil {
 				continue
@@ -155,7 +142,7 @@ func (dr *DataRedaction) __obfuscateJSONString(jsonString string, regexCompiled 
 	return string(jsonBytes)
 }
 
-func (dr *DataRedaction) __obfuscateString(textContent string, regexCompiled *regexp.Regexp) string {
+func (dr *DataRedaction) obfuscateString(textContent string, regexCompiled *regexp.Regexp) string {
 	return regexCompiled.ReplaceAllString(textContent, defaultRedactionReplacementString)
 }
 
@@ -163,26 +150,26 @@ func (dr *DataRedaction) redactHeadersData(data string, regExCompiled *regexp.Re
 	if regExCompiled == nil || data == "" {
 		return data
 	}
-	return dr.__obfuscateJSONString(data, regExCompiled)
+	return dr.obfuscateJSONString(data, regExCompiled)
 }
 
 func (dr *DataRedaction) redactBodyData(data string, regExCompiled *regexp.Regexp) string {
 	if regExCompiled == nil || data == "" {
 		return data
 	}
-	return dr.__obfuscateString(data, regExCompiled)
+	return dr.obfuscateString(data, regExCompiled)
 }
 
 func (dr *DataRedaction) redactQueryData(data string, regExCompiled *regexp.Regexp) string {
 	if regExCompiled == nil || data == "" {
 		return data
 	}
-	return dr.__obfuscateJSONString(data, regExCompiled)
+	return dr.obfuscateJSONString(data, regExCompiled)
 }
 
 func (dr *DataRedaction) redactUriStringData(data string, regExCompiled *regexp.Regexp) string {
 	if regExCompiled == nil || data == "" {
 		return data
 	}
-	return dr.__obfuscateString(data, regExCompiled)
+	return dr.obfuscateString(data, regExCompiled)
 }
