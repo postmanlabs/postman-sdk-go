@@ -27,8 +27,8 @@ type apiResponse struct {
 func callApi(urlPath string, payload interface{}, sdkconfig *pminterfaces.PostmanSDKConfig) apiResponse {
 
 	var ar apiResponse
-	b := new(bytes.Buffer)
-	err := json.NewEncoder(b).Encode(payload)
+	jsonbytes := new(bytes.Buffer)
+	err := json.NewEncoder(jsonbytes).Encode(payload)
 
 	if err != nil {
 		ar.Error = fmt.Errorf("error in json encoding %v", err)
@@ -37,7 +37,7 @@ func callApi(urlPath string, payload interface{}, sdkconfig *pminterfaces.Postma
 
 	url := sdkconfig.Options.ReceiverBaseUrl + urlPath
 	client := &http.Client{}
-	req, reqErr := http.NewRequest("POST", url, b)
+	req, reqErr := http.NewRequest("POST", url, jsonbytes)
 
 	if reqErr != nil {
 		ar.Error = fmt.Errorf("error:%v while creating request", reqErr)

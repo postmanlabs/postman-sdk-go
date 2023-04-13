@@ -21,7 +21,7 @@ type bResponseBody struct {
 	}
 }
 
-type bootstrapAPIResponse struct {
+type bootstrapApiResponse struct {
 	ar   apiResponse
 	Body bResponseBody
 }
@@ -42,7 +42,7 @@ func isRetryable(statusCode int) bool {
 	return false
 }
 
-func callBootstrapApi(sdkconfig *pminterfaces.PostmanSDKConfig) bootstrapAPIResponse {
+func callBootstrapApi(sdkconfig *pminterfaces.PostmanSDKConfig) bootstrapApiResponse {
 	payload := bRequestBody{
 		SDK: SdkPayload{
 			CollectionId: sdkconfig.CollectionId,
@@ -53,7 +53,7 @@ func callBootstrapApi(sdkconfig *pminterfaces.PostmanSDKConfig) bootstrapAPIResp
 	resp := callApi(BOOTSTRAP_PATH, payload, sdkconfig)
 	defer resp.Body.Close()
 
-	var br bootstrapAPIResponse
+	var br bootstrapApiResponse
 	var body bResponseBody
 	br.ar = resp
 

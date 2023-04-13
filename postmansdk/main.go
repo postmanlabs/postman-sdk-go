@@ -54,7 +54,7 @@ func Initialize(
 		Config: sdkconfig,
 	}
 
-	if _, err := psdk.updateConfig(); err != nil {
+	if err := pmreceiver.UpdateConfig(sdkconfig); err != nil {
 		return errorCleanup, err
 	}
 
@@ -71,24 +71,6 @@ func Initialize(
 	go pmreceiver.HealthCheck(psdk.Config)
 
 	return shutdown, nil
-}
-
-func (psdk *postmanSDK) updateConfig() (bool, error) {
-	enable, err := pmreceiver.Bootstrap(psdk.Config)
-
-	if err != nil {
-		psdk.Config.Suppress()
-		pmutils.Log.WithField("error", err).Error("SDK disabled due to bootstrap failure")
-		return false, err
-	}
-
-	if !enable {
-		psdk.Config.Suppress()
-	} else {
-		psdk.Config.Unsuppress()
-	}
-
-	return true, nil
 }
 
 func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporter, error) {

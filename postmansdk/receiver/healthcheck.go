@@ -20,12 +20,12 @@ type hResponseBody struct {
 	Data    []map[string]interface{} `json:"data"`
 }
 
-type healthcheckAPIResponse struct {
+type healthcheckApiResponse struct {
 	ar   apiResponse
 	Body hResponseBody
 }
 
-func callHealthApi(sdkconfig *pminterfaces.PostmanSDKConfig) healthcheckAPIResponse {
+func callHealthApi(sdkconfig *pminterfaces.PostmanSDKConfig) healthcheckApiResponse {
 	payload := hRequestBody{
 		SDK: SdkPayload{
 			CollectionId: sdkconfig.CollectionId,
@@ -37,7 +37,7 @@ func callHealthApi(sdkconfig *pminterfaces.PostmanSDKConfig) healthcheckAPIRespo
 
 	defer resp.Body.Close()
 
-	var hr healthcheckAPIResponse
+	var hr healthcheckApiResponse
 	var hbody hResponseBody
 	hr.ar = resp
 
@@ -85,7 +85,7 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 
 		} else if resp.ar.StatusCode == http.StatusConflict {
 
-			if err := updateConfig(sdkconfig); err != nil {
+			if err := UpdateConfig(sdkconfig); err != nil {
 				pmutils.Log.Debug("Shutting down healthcheck")
 
 				return
@@ -97,7 +97,7 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 			// Healthcheck received without bootstrapping
 			if resp.ar.DecodeError == nil && !resp.Body.Healthy {
 
-				if err := updateConfig(sdkconfig); err != nil {
+				if err := UpdateConfig(sdkconfig); err != nil {
 					pmutils.Log.Debug("Shutting down healthcheck")
 
 					return
@@ -123,7 +123,7 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 
 }
 
-func updateConfig(pc *pminterfaces.PostmanSDKConfig) error {
+func UpdateConfig(pc *pminterfaces.PostmanSDKConfig) error {
 	enable, err := Bootstrap(pc)
 
 	if err != nil {
