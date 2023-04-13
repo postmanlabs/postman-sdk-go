@@ -60,7 +60,8 @@ func callApi(urlPath string, payload interface{}, sdkconfig *pminterfaces.Postma
 	return ar
 }
 
-func exponentialDelay(factor int) {
-	delay := time.Duration(math.Pow(EXPONENTIAL_BACKOFF_BASE, float64(factor)))
+func exponentialDelay(factor int, delaySeconds int) {
+	expo := math.Pow(EXPONENTIAL_BACKOFF_BASE, float64(factor))
+	delay := time.Duration(delaySeconds * int(expo))
 	time.Sleep(delay * time.Second)
 }

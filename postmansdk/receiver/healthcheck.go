@@ -72,7 +72,7 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 
 			sdkconfig.Suppress()
 			retry += 1
-			exponentialDelay(retry)
+			exponentialDelay(retry, DEFAULT_HEALTH_PING_INTERVAL_SECONDS)
 
 		} else if resp.ar.StatusCode == http.StatusOK {
 
@@ -117,7 +117,7 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 			sdkconfig.Suppress()
 			retry += 1
 			pmutils.Log.Debug(fmt.Printf("Retrying healthcheck %d", retry))
-			exponentialDelay(retry)
+			exponentialDelay(retry, DEFAULT_HEALTH_PING_INTERVAL_SECONDS)
 		}
 	}
 

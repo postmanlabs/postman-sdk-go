@@ -77,7 +77,7 @@ func Bootstrap(sdkconfig *pminterfaces.PostmanSDKConfig) (bool, error) {
 
 		if resp.ar.Error != nil {
 			pmutils.Log.Debug("Bootstrap API Failed resp: %+v", resp)
-			exponentialDelay(retries)
+			exponentialDelay(retries, BOOTSTRAP_RETRY_DELAY_SECONDS)
 
 		} else if resp.ar.StatusCode == http.StatusOK {
 
@@ -98,7 +98,7 @@ func Bootstrap(sdkconfig *pminterfaces.PostmanSDKConfig) (bool, error) {
 				retries,
 				resp.ar.StatusCode,
 			)
-			exponentialDelay(retries)
+			exponentialDelay(retries, BOOTSTRAP_RETRY_DELAY_SECONDS)
 
 		} else {
 			return false, fmt.Errorf("unhandled status code bootstrap API resp:%+v", resp)
