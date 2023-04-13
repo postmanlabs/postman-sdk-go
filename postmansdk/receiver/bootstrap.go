@@ -51,11 +51,16 @@ func callBootstrapApi(sdkconfig *pminterfaces.PostmanSDKConfig) bootstrapApiResp
 	}
 
 	resp := makePostRequest(BOOTSTRAP_PATH, payload, sdkconfig)
-	defer resp.Body.Close()
-
+	
 	var br bootstrapApiResponse
 	var body bResponseBody
 	br.ar = resp
+	
+	// Body will be nill in case request failed
+	if resp.Body == nil {
+		return br
+	}
+	defer resp.Body.Close()
 
 	err := json.NewDecoder(resp.Body).Decode(&body)
 

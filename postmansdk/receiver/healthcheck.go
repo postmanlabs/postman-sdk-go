@@ -35,11 +35,15 @@ func callHealthApi(sdkconfig *pminterfaces.PostmanSDKConfig) healthcheckApiRespo
 
 	resp := makePostRequest(HEALTHCHECK_PATH, payload, sdkconfig)
 
-	defer resp.Body.Close()
-
 	var hr healthcheckApiResponse
 	var hbody hResponseBody
 	hr.ar = resp
+
+	// Body will be nill in case request failed
+	if resp.Body == nil {
+		return hr
+	}
+	defer resp.Body.Close()
 
 	err := json.NewDecoder(resp.Body).Decode(&hbody)
 
