@@ -74,16 +74,17 @@ func Bootstrap(sdkconfig *pminterfaces.PostmanSDKConfig) (bool, error) {
 	for retries := 0; retries < BOOTSTRAP_RETRY_COUNT; retries++ {
 
 		resp := callBootstrapApi(sdkconfig)
+
 		if resp.ar.Error != nil {
 			pmutils.Log.Debug("Bootstrap API Failed resp: %+v", resp)
 			exponentialDelay(retries)
-		}
 
-		if resp.ar.StatusCode == http.StatusOK {
+		} else if resp.ar.StatusCode == http.StatusOK {
 
-			if resp.ar.DecodeError != nil && !resp.Body.OK {
+			if resp.ar.DecodeError != nil || !resp.Body.OK {
 				return false, fmt.Errorf(
-					"non OK bootstrap API resp.status:%v resp.body: %+v",
+					"bootstrap API error:%v resp.status:%v resp.body: %+v",
+					resp.ar.DecodeError,
 					resp.ar.StatusCode,
 					resp.Body,
 				)
