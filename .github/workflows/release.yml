@@ -19,6 +19,10 @@ jobs:
           echo $latest_tag
           echo "latest_tag=$latest_tag" >> "$GITHUB_OUTPUT"
 
+      - name: Get Previous tag
+        id: previous_tag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+
       - name: Get current version
         id: current_version
         uses: michmich112/extract-version@main
@@ -39,6 +43,8 @@ jobs:
           echo ${{ steps.latest_tag.outputs.latest_tag }}
           echo "New tag:"
           echo ${{ steps.set_tag.outputs.new_tag }}
+          echo "Previous tag:"
+          echo ${{ steps.previous_tag.outputs.tag }}
 
       - name: Version check result
         uses: actions/github-script@v3
