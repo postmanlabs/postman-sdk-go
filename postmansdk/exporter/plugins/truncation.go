@@ -62,7 +62,7 @@ func trimBodyValuesToTypes(data interface{}, currentLevel int) interface{} {
 	case []interface{}:
 		trimmedBody := make([]interface{}, 0)
 		for _, value := range data.([]interface{}) {
-			if currentLevel <= DEFAULT_DATA_TRUNCATION_LEVEL && value != nil && reflect.TypeOf(value).Kind() == reflect.Map {
+			if currentLevel <= DEFAULT_DATA_TRUNCATION_LEVEL && value != nil && (reflect.TypeOf(value).Kind() == reflect.Map || reflect.TypeOf(value).Kind() == reflect.Slice) {
 				trimmedBody = append(trimmedBody, trimBodyValuesToTypes(value, currentLevel+1))
 			} else if value == nil {
 				trimmedBody = append(trimmedBody, map[string]interface{}{"type": nil})
@@ -74,7 +74,7 @@ func trimBodyValuesToTypes(data interface{}, currentLevel int) interface{} {
 	case map[string]interface{}:
 		trimmedBody := make(map[string]interface{})
 		for key, value := range data.(map[string]interface{}) {
-			if currentLevel <= DEFAULT_DATA_TRUNCATION_LEVEL && value != nil && reflect.TypeOf(value).Kind() == reflect.Map {
+			if currentLevel <= DEFAULT_DATA_TRUNCATION_LEVEL && value != nil && (reflect.TypeOf(value).Kind() == reflect.Map || reflect.TypeOf(value).Kind() == reflect.Slice) {
 				trimmedBody[key] = trimBodyValuesToTypes(value, currentLevel+1)
 			} else if value == nil {
 				trimmedBody[key] = map[string]interface{}{"type": nil}
