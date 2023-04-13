@@ -20,10 +20,13 @@ func main() {
 		},
 	}
 
-	cleanup := pm.Initialize(collectionId, apiKey, pminterfaces.WithReceiverBaseUrl("REPLACE THIS"),
+	cleanup, err := pm.Initialize(collectionId, apiKey, pminterfaces.WithReceiverBaseUrl("REPLACE THIS"),
 		pminterfaces.WithRedactSensitiveData(redactSensitiveData))
-	defer cleanup(context.Background())
 
+	if err == nil {
+		defer cleanup(context.Background())
+		// pm.InstrumentGin(router)
+	}
 	router := gin.Default()
 
 	// Otel patch

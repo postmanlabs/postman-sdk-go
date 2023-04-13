@@ -13,12 +13,6 @@ var DEFAULT_DATA_TRUNCATION_LEVEL int = 2
 
 func Truncation(span tracesdk.ReadOnlySpan) {
 	fmt.Println("We are truncating the data")
-
-	spanHttpBodyAttributesName := map[string]interface{}{
-		"response": "http.response.body",
-		"request":  "http.request.body",
-	}
-
 	spanAttributes := span.Attributes()
 
 	for key, value := range spanAttributes {

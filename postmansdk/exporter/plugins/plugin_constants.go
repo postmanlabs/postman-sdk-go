@@ -1,5 +1,10 @@
 package plugins
 
+var spanHttpBodyAttributesName = map[string]string{
+	"response": "http.response.body",
+	"request":  "http.request.body",
+}
+
 var defaultRedactionRules = map[string]string{
 	"pmPostmanAPIKey":    `PMAK-[a-f0-9]{24}-[a-f0-9]{34}`,
 	"pmPostmanAccessKey": `PMAT-[0-9a-z]{26}`,
@@ -7,7 +12,7 @@ var defaultRedactionRules = map[string]string{
 	"pmBearerToken":      `Bearer [a-z0-9A-Z-._~+/]{15,1000}`,
 }
 
-var requestRedactionMap = `{
+const requestRedactionMap = `{
     "body": {
         "attribute_key":      "http.request.body",
         "redaction_function": "redact_body_data"
@@ -30,7 +35,7 @@ var requestRedactionMap = `{
     }
 }`
 
-var responseRedactionMap = `{
+const responseRedactionMap = `{
 	"body": {
 		"attribute_key":      "http.response.body",
 		"redaction_function": "redact_body_data"
