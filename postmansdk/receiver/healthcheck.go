@@ -52,7 +52,7 @@ func callHealthApi(sdkconfig *pminterfaces.PostmanSDKConfig) healthcheckApiRespo
 	}
 
 	hr.Body = hbody
-	pmutils.Log.Debug(fmt.Printf("Healtcheck API %+v", hr))
+	pmutils.Log.Debug(fmt.Sprintf("Healtcheck API %+v", hr))
 
 	return hr
 }
@@ -120,7 +120,7 @@ func HealthCheck(sdkconfig *pminterfaces.PostmanSDKConfig) {
 		} else {
 			sdkconfig.Suppress()
 			retry += 1
-			pmutils.Log.Debug(fmt.Printf("Retrying healthcheck %d", retry))
+			pmutils.Log.Debug(fmt.Sprintf("Retrying healthcheck %d", retry))
 			exponentialDelay(retry, DEFAULT_HEALTH_PING_INTERVAL_SECONDS)
 		}
 	}

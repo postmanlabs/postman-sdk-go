@@ -23,7 +23,6 @@ type PostmanSDKConfigOptions struct {
 	Enable                       bool
 	ReceiverBaseUrl              string
 	TruncateData                 bool
-	RedactSensitiveData          map[string]interface{}
 	IgnoreOutgoingRequests       []string
 	IgnoreIncomingRequests       []string
 }
@@ -110,11 +109,7 @@ func WithTruncateData(truncateData bool) PostmanSDKConfigOption {
 
 	}
 }
-func WithRedactSensitiveData(redactSensitiveData map[string]interface{}) PostmanSDKConfigOption {
-	return func(option *PostmanSDKConfigOptions) {
-		option.RedactSensitiveData = redactSensitiveData
-	}
-}
+
 func WithIgnoreOutgoingRequests(ignoreOutgoingRequests []string) PostmanSDKConfigOption {
 	return func(option *PostmanSDKConfigOptions) {
 		option.IgnoreOutgoingRequests = ignoreOutgoingRequests

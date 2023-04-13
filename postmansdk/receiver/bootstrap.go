@@ -69,7 +69,7 @@ func callBootstrapApi(sdkconfig *pminterfaces.PostmanSDKConfig) bootstrapApiResp
 	}
 
 	br.Body = body
-	pmutils.Log.Debug(fmt.Printf("Bootstrap API %+v", br))
+	pmutils.Log.Debug(fmt.Sprintf("Bootstrap API %+v", br))
 
 	return br
 }
