@@ -79,7 +79,7 @@ func (pc *PostmanSDKConfig) Unsuppress() {
 func (pc *PostmanSDKConfig) IsSuppressed() bool {
 	pc.mu.Lock()
 	defer pc.mu.Unlock()
-	return pc.Options.Enable
+	return !pc.Options.Enable
 }
 
 func WithBufferIntervalInMilliseconds(bufferMillis int) PostmanSDKConfigOption {
