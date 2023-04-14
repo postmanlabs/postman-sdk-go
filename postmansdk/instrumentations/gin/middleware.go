@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/gin-gonic/gin"
+	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -68,7 +69,7 @@ func getResponseBody(c *gin.Context) *bodyLogWriter {
 }
 
 // Fetches the current span from the request context and adds the missing attributes for request and response data.
-func Middleware() gin.HandlerFunc {
+func Middleware(psdk pminterfaces.PostmanSDKConfigOptions) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		currentSpan := trace.SpanFromContext(c.Request.Context())
 
@@ -100,6 +101,11 @@ func Middleware() gin.HandlerFunc {
 		// completes.
 		c.Next()
 
+		truncation_attribute := "False"
+		if psdk.TruncateData {
+			truncation_attribute = "True"
+		}
+
 		currentSpan.SetAttributes(
 			attribute.String("http.request.headers", getRequestHeaders(c)),
 			attribute.String("http.request.params", getRequestParams(c)),
@@ -107,6 +113,7 @@ func Middleware() gin.HandlerFunc {
 			attribute.String("http.request.body", reqBody),
 			attribute.String("http.response.headers", getResponseHeaders(c)),
 			attribute.String("http.response.body", blw.body.String()),
+			attribute.String(pmutils.POSTMAN_DATA_TRUNCATION_ATTRIBUTE_NAME, truncation_attribute),
 		)
 	}
 }
