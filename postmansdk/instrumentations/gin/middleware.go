@@ -101,9 +101,9 @@ func Middleware(psdk pminterfaces.PostmanSDKConfigOptions) gin.HandlerFunc {
 		// completes.
 		c.Next()
 
-		truncation_attribute := "False"
+		truncationAttribute := "False"
 		if psdk.TruncateData {
-			truncation_attribute = "True"
+			truncationAttribute = "True"
 		}
 
 		currentSpan.SetAttributes(
@@ -113,7 +113,7 @@ func Middleware(psdk pminterfaces.PostmanSDKConfigOptions) gin.HandlerFunc {
 			attribute.String("http.request.body", reqBody),
 			attribute.String("http.response.headers", getResponseHeaders(c)),
 			attribute.String("http.response.body", blw.body.String()),
-			attribute.String(pmutils.POSTMAN_DATA_TRUNCATION_ATTRIBUTE_NAME, truncation_attribute),
+			attribute.String(pmutils.POSTMAN_DATA_TRUNCATION_ATTRIBUTE_NAME, truncationAttribute),
 		)
 	}
 }
