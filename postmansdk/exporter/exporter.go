@@ -2,26 +2,27 @@ package exporter
 
 import (
 	"context"
+	"fmt"
+
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 
 	plugins "github.com/postmanlabs/postman-go-sdk/postmansdk/exporter/plugins"
 	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 )
 
 type PostmanExporter struct {
 	otlptrace.Exporter
-	Config pminterfaces.PostmanSDKConfig
+	Sdkconfig *pminterfaces.PostmanSDKConfig
 }
 
 func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnlySpan) error {
-	pmutils.Log.Info("Configuration %+v", e.Config)
+	if e.Sdkconfig.IsSuppressed() {
+		return nil
+	}
 
-	truncateDataFlag := e.Config.Options.TruncateData
-	redactDataFlag := e.Config.Options.RedactSensitiveData.RedactionEnable
-
-	pmutils.Log.Debug("Spans to be exported are %+v", ss)
+	pmutils.Log.Debug("Spans to be exported are")
 
 	for idx, span := range ss {
 		defer func() {
@@ -30,12 +31,12 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 			}
 		}()
 
-		if truncateDataFlag {
+		if e.Sdkconfig.Options.TruncateData {
 			plugins.Truncate(span)
 		}
 
-		if redactDataFlag {
-			rules := e.Config.Options.RedactSensitiveData.Rules
+		if e.Sdkconfig.Options.RedactSensitiveData.RedactionEnable {
+			rules := e.Sdkconfig.Options.RedactSensitiveData.Rules
 			if rules == nil {
 				rules = make(map[string]string)
 			}
@@ -44,7 +45,7 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 			pmutils.Log.Debug("Rules %+v", rules)
 		}
 
-		pmutils.Log.Debug("Span number:%d span:%+v", idx, span)
+		pmutils.Log.Debug(fmt.Printf("Span number:%d span:%+v", idx, span))
 	}
 	return e.Exporter.ExportSpans(ctx, ss)
 }

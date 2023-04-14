@@ -1,0 +1,68 @@
+name: Release Go SDK
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  release:
+    name: Release and Tag Go SDK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate token # https://postman.slack.com/archives/C0477Q3P1N1/p1669979360729249
+        id: generate_token
+        uses: postmanlabs/github-app-token@v1
+        with:
+          app_id: ${{ secrets.DISTRIBUTION_BOT_ID }}
+          private_key: ${{ secrets.DISTRIBUTION_BOT_CERT }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get latest tag
+        id: latest_tag
+        run: |
+          latest_tag=$(git tag | grep v | sort -V | tail -1)
+          echo $latest_tag
+          echo "latest_tag=$latest_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Get current version
+        id: current_version
+        uses: michmich112/extract-version@main
+        with:
+          version-file: ./postmansdk/version.go
+          schema: major.minor.build
+
+      - name: Set tag candidate
+        id: set_tag
+        run: |
+          new_tag=v${{ steps.current_version.outputs.version }}
+          echo $new_tag
+          echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Version check result
+        if: steps.latest_tag.outputs.latest_tag == steps.set_tag.outputs.new_tag
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('Version is not updated - please bump on `version.go`')
+
+      - name: Push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.0
+        with:
+          github_token: ${{ steps.generate_token.outputs.token }}
+          custom_tag: ${{ steps.set_tag.outputs.new_tag }}
+          tag_prefix: ''
+
+      - name: Create a GitHub release
+        uses: postman-eng/action-gh-release@v1
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          tag_name: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ steps.tag_version.outputs.changelog }}
+          generate_release_notes: true

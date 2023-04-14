@@ -2,11 +2,9 @@ package postmansdk
 
 import (
 	"context"
-
 	"fmt"
 	"strings"
 
-	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 	"github.com/sirupsen/logrus"
 
 	"go.opentelemetry.io/otel"
@@ -17,14 +15,20 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	pmexporter "github.com/postmanlabs/postman-go-sdk/postmansdk/exporter"
+	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
+	pmreceiver "github.com/postmanlabs/postman-go-sdk/postmansdk/receiver"
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
 
 type postmanSDK struct {
-	Config pminterfaces.PostmanSDKConfig
+	Config *pminterfaces.PostmanSDKConfig
 }
 
 var psdk *postmanSDK
+
+func errorCleanup(context.Context) error {
+	return nil
+}
 
 func Initialize(
 	collectionId string,
@@ -34,7 +38,10 @@ func Initialize(
 
 	sdkconfig := pminterfaces.InitializeSDKConfig(collectionId, apiKey, options...)
 
-	// Setting log level
+	if !sdkconfig.Options.Enable {
+		return errorCleanup, fmt.Errorf("postman SDK is not enabled")
+	}
+
 	if sdkconfig.Options.Debug {
 		pmutils.CreateNewLogger(logrus.DebugLevel)
 	} else {
@@ -47,13 +54,23 @@ func Initialize(
 		Config: sdkconfig,
 	}
 
+	// Register live collection
+	if err := pmreceiver.UpdateConfig(sdkconfig); err != nil {
+		return errorCleanup, err
+	}
+
 	ctx := context.Background()
 
 	shutdown, err := psdk.installExportPipeline(ctx)
 
 	if err != nil {
 		pmutils.Log.WithError(err).Error("Failed to create a new exporter")
+
+		return errorCleanup, err
 	}
+
+	go pmreceiver.HealthCheck(psdk.Config)
+
 	return shutdown, nil
 }
 
@@ -70,7 +87,7 @@ func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporte
 				1,
 			),
 		),
-		otlptracehttp.WithURLPath(pmutils.TRACE_RECEIVER_PATH),
+		otlptracehttp.WithURLPath(pmreceiver.TRACE_RECEIVER_PATH),
 		otlptracehttp.WithHeaders(clientHeaders),
 	)
 	exporter, err := otlptrace.New(ctx, client)
@@ -87,19 +104,19 @@ func (psdk *postmanSDK) installExportPipeline(
 	if err != nil {
 		return nil, fmt.Errorf("creating OTLP trace exporter: %w", err)
 	}
-
 	pexporter := &pmexporter.PostmanExporter{
-		Exporter: *exporter,
-		Config:   psdk.Config,
+		Exporter:  *exporter,
+		Sdkconfig: psdk.Config,
 	}
 
 	resources, err := resource.New(
 		context.Background(),
 		resource.WithAttributes(
-			attribute.String("library.language", "go"),
+			attribute.String("telemetry.sdk.language", "go"),
 			attribute.String(
 				pmutils.POSTMAN_COLLECTION_ID_ATTRIBUTE_NAME, psdk.Config.CollectionId,
 			),
+			attribute.String(pmutils.POSTMAN_SDK_VERSION_ATTRIBUTE_NAME, POSTMAN_SDK_VERSION),
 		),
 	)
 	if err != nil {

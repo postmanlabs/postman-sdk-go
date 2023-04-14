@@ -24,14 +24,16 @@ func Truncate(span tracesdk.ReadOnlySpan) {
 
 				data := spanAttributes[k].Value.AsString()
 
-				var finalData interface{}
+				var jdata interface{}
 
-				err := json.Unmarshal([]byte(data), &finalData)
+				err := json.Unmarshal([]byte(data), &jdata)
 				if err != nil {
 					pmutils.Log.Debug(err)
+					// Supporting only content-type=application/json
+					return
 				}
 
-				truncatedData := trimBodyValuesToTypes(finalData, 1)
+				truncatedData := trimBodyValuesToTypes(jdata, 1)
 
 				jsonData, err := json.Marshal(truncatedData)
 				if err != nil {
@@ -50,59 +52,62 @@ func trimBodyValuesToTypes(data interface{}, currentLevel int) interface{} {
 		return nil
 	}
 
-	switch data.(type) {
-	case string:
-		var parsedData interface{}
-		err := json.Unmarshal([]byte(data.(string)), &parsedData)
-		if err != nil {
-			// If the data is not JSON parsable, it does not make sense to continue, as we only support
-			// content-type = application/json at the moment.
-			return data
-		}
-		data = parsedData
-
+	switch data := data.(type) {
 	case []interface{}:
 		trimmedBody := make([]interface{}, 0)
-		for _, value := range data.([]interface{}) {
-			/*
-				Using reflect.TypeOf(value).Kind() as it provides the most generic and direct comparison to types like
-				reflect.Map orreflect.Slice.
-				We enter this code block only when the current data type is slice. If, we find complex data further,
-				recursive function is called, else the current data type is assigned. Since, we are limiting the
-				truncation level to 2, that is also taken here.
-			*/
-			if currentLevel <= DEFAULT_DATA_TRUNCATION_LEVEL && value != nil &&
-				(reflect.TypeOf(value).Kind() == reflect.Map || reflect.TypeOf(value).Kind() == reflect.Slice) {
+
+		for _, value := range data {
+
+			if checkRecursive(value, currentLevel) {
 				trimmedBody = append(trimmedBody, trimBodyValuesToTypes(value, currentLevel+1))
-			} else if value == nil {
-				trimmedBody = append(trimmedBody, map[string]interface{}{"type": nil})
 			} else {
-				trimmedBody = append(trimmedBody, map[string]interface{}{"type": reflect.TypeOf(value).Kind().String()})
+				trimmedBody = append(trimmedBody, getDataType(value))
 			}
 		}
+
 		return trimmedBody
 
 	case map[string]interface{}:
 		trimmedBody := make(map[string]interface{})
-		for key, value := range data.(map[string]interface{}) {
-			/*
-				Similarly, we enter this code block only when the current data type is map. If, we find complex data further,
-				recursive function is called, else the current data type is assigned. Since, we are limiting the
-				truncation level to 2, that is also taken here.
-			*/
-			if currentLevel <= DEFAULT_DATA_TRUNCATION_LEVEL && value != nil &&
-				(reflect.TypeOf(value).Kind() == reflect.Map || reflect.TypeOf(value).Kind() == reflect.Slice) {
+
+		for key, value := range data {
+
+			if checkRecursive(value, currentLevel) {
 				trimmedBody[key] = trimBodyValuesToTypes(value, currentLevel+1)
-			} else if value == nil {
-				trimmedBody[key] = map[string]interface{}{"type": nil}
 			} else {
-				trimmedBody[key] = map[string]interface{}{"type": reflect.TypeOf(value).Kind().String()}
+				trimmedBody[key] = getDataType(value)
 			}
 		}
+
 		return trimmedBody
 
 	default:
 		return data
 	}
-	return data
+}
+
+func getDataType(value interface{}) map[string]interface{} {
+	if value == nil {
+		return map[string]interface{}{"type": nil}
+	}
+	//TODO: Precise reasoning for reflect.TypeOf vs reflect.Valueof
+	return map[string]interface{}{"type": reflect.TypeOf(value).Kind().String()}
+}
+
+func checkRecursive(value interface{}, level int) bool {
+	if level > DEFAULT_DATA_TRUNCATION_LEVEL {
+		return false
+	}
+	if value == nil {
+		return false
+	}
+
+	dtype := reflect.TypeOf(value).Kind()
+
+	if dtype == reflect.Map || dtype == reflect.Slice {
+		return true
+	}
+
+	return false
+
 }
