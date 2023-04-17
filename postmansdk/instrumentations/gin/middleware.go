@@ -69,7 +69,7 @@ func getResponseBody(c *gin.Context) *bodyLogWriter {
 }
 
 // Fetches the current span from the request context and adds the missing attributes for request and response data.
-func Middleware(psdk pminterfaces.PostmanSDKConfigOptions) gin.HandlerFunc {
+func Middleware(sdkconfig *pminterfaces.PostmanSDKConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		currentSpan := trace.SpanFromContext(c.Request.Context())
 
@@ -108,7 +108,7 @@ func Middleware(psdk pminterfaces.PostmanSDKConfigOptions) gin.HandlerFunc {
 			attribute.String("http.request.body", reqBody),
 			attribute.String("http.response.headers", getResponseHeaders(c)),
 			attribute.String("http.response.body", blw.body.String()),
-			attribute.Bool(pmutils.POSTMAN_DATA_TRUNCATION_ATTRIBUTE_NAME, psdk.TruncateData),
+			attribute.Bool(pmutils.POSTMAN_DATA_TRUNCATION_ATTRIBUTE_NAME, sdkconfig.Options.TruncateData),
 		)
 	}
 }

@@ -48,5 +48,5 @@ func getMiddlewareOptions() []otelgin.Option {
 
 func InstrumentGin(router *gin.Engine) {
 	router.Use(otelgin.Middleware("", getMiddlewareOptions()...))
-	router.Use(instrumentations_gin.Middleware(psdk.Config.Options))
+	router.Use(instrumentations_gin.Middleware(psdk.Config))
 }
