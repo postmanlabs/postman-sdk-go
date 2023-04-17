@@ -30,18 +30,17 @@ func (dr *DataRedaction) compileRules(rules map[string]string) {
 		combinedRules[k] = v
 	}
 
-	for rlName, regexRuleCompiled := range combinedRules {
-		dr.ruleNameRegexMap[rlName], _ = regexp.Compile("(?i)" + regexRuleCompiled)
+	for rName, rCompiled := range combinedRules {
+		dr.ruleNameRegexMap[rName], _ = regexp.Compile("(?i)" + rCompiled)
 	}
 }
 
 func (dr *DataRedaction) redactData(span tracesdk.ReadOnlySpan) {
 	spanAttributes := span.Attributes()
 	for key, value := range spanAttributes {
-		attrFunction, attExists := redactionMap[string(value.Key)]
-		if attExists {
+		if attrFunction, attExists := redactionMap[string(value.Key)]; attExists {
 			data := value.Value.AsString()
-			if data == "" {
+			if data == "{}" {
 				continue
 			}
 
@@ -49,15 +48,16 @@ func (dr *DataRedaction) redactData(span tracesdk.ReadOnlySpan) {
 			for _, regEx := range dr.ruleNameRegexMap {
 				redactedData := attrFunction(data, regEx)
 
-				if data != redactedData {
-					jsonStr, err := json.Marshal(redactedData)
-					if err != nil {
-						pmutils.Log.WithError(err).Error("Issue while pasring the redacted data.")
-					}
-
-					spanAttributes[key].Value = attribute.StringValue(string(jsonStr))
-					data = redactedData
+				if data == redactedData {
+					continue
 				}
+				jsonStr, err := json.Marshal(redactedData)
+				if err != nil {
+					pmutils.Log.WithError(err).Error("Issue while parsing the redacted data.")
+				}
+
+				spanAttributes[key].Value = attribute.StringValue(string(jsonStr))
+				data = redactedData
 			}
 		}
 	}
