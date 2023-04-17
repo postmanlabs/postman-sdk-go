@@ -15,7 +15,7 @@ import (
     pm "github.com/postmanlabs/postman-go-sdk/postmansdk"
 )
 
-func main(){
+func main() {
 	router := gin.Default()
 	cleanup, err := pm.Initialize("<POSTMAN-COLLECTION-ID>", "<POSTMAN-API-KEY>")
 
@@ -102,9 +102,6 @@ cleanup, err := pm.Initialize(
     }
     ```
 
-  - Type: `func(bool)`
-  - Default: `true`
-
 - **WithRedactSensitiveData**: Redact sensitive data such as api_keys and auth tokens, before they leave the sdk.
 
   - **enabled** by default.
@@ -123,7 +120,7 @@ cleanup, err := pm.Initialize(
         true,
         map[string]string{
             "<rule name>": "<regex to match the rule>",
-            "basic_auth": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b",
+            "key": `PMAT-[0-9a-z]{26}`,
         }
     )
     ```
