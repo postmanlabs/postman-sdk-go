@@ -11,7 +11,9 @@ go get github.com/postmanlabs/postman-go-sdk
 ## Initializing the SDK
 
 ```golang
-import pm "github.com/postmanlabs/postman-go-sdk/postmansdk"
+import (
+    pm "github.com/postmanlabs/postman-go-sdk/postmansdk"
+)
 
 func main(){
 	router := gin.Default()
@@ -31,6 +33,7 @@ For full working example see: [Gin instrumented example](https://github.com/post
 ## Configuration
 
 #### Required Params
+
 - **CollectionId**: Postman collectionId where requests will be added. This is the id for your live collection.
 
   - Type: `string`
@@ -56,7 +59,6 @@ cleanup, err := pm.Initialize(
 )
 
 ```
-
 
 #### Configuration Options
 
