@@ -6,6 +6,7 @@ This SDK instruments web frameworks to capture http requests and auto-generates 
 ## Installation Process
 
 ```
+go get github.com/postmanlabs/postman-go-sdk
 
 ```
 
@@ -13,30 +14,62 @@ This SDK instruments web frameworks to capture http requests and auto-generates 
 ## Initializing the SDK
 
 
-```
-```
+```golang
+import (
 
+	pm "github.com/postmanlabs/postman-go-sdk/postmansdk"
+	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
+)
+
+	router := gin.Default()
+	cleanup, err := pm.Initialize("<POSTMAN-COLLECTION-ID>", "<POSTMAN-API-KEY>")
+
+	if err == nil {
+		defer cleanup(context.Background())
+		pm.InstrumentGin(router)
+	}
+
+```
+For full working example see[Gin instrumented example](https://github.com/postmanlabs/postman-go-sdk/tree/master/postmansdk/example/testgo)
 
 ## Configuration
 
 **For initialization the SDK, the following values can be configured -**
+```golang
+import (
+
+	pm "github.com/postmanlabs/postman-go-sdk/postmansdk"
+	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
+)
+
+	cleanup, err := pm.Initialize(
+    "<POSTMAN-COLLECTION-ID>", 
+    "<POSTMAN-API-KEY>",
+    pminterfaces.WithDebug(true),
+    pminterfaces.With
+  )
+
+```
 
 
-- **collection_id**: Postman collectionId where requests will be added. This is the id for your live collection.
+- **CollectionId**: Postman collectionId where requests will be added. This is the id for your live collection.
   - Type: ```string```
 
-- **api_key**: Postman api key needed for authentication. 
+- **ApiKey**: Postman api key needed for authentication. 
   - Type: ```string```
 
-- **debug**: Enable/Disable debug logs.
-  - Type: ```boolean```
-  - Default: ```False```
+- **WithDebug**: Enable/Disable debug logs.
+  - Type: ```func(bool)```
+  - Default: ```false```
 
-- **enable**: Enable/Disable the SDK. Disabled SDK does not capture any new traces, nor does it use up system resources.
-  - Type: ```boolean```
-  - Default: ```True```
+- **WithEnable**: Enable/Disable the SDK. Disabled SDK does not capture any new traces, nor does it use up system resources.
+  - Type: ```func(bool)```
+  - Default: ```true```
 
-- **truncate_data**: Truncate the request and response body so that no PII data is sent to Postman. This is **enabled** by default. Disabling it sends actual request and response payloads.
+- **WithTruncateData**: Truncate the request and response body so that no PII data is sent to Postman. 
+- Disabling it sends actual request and response payloads.
+  - Type: ```func(bool)```
+  - Default: ```true```
   - Example: 
     > Sample payload or non-truncated payload:
 
@@ -62,7 +95,7 @@ This SDK instruments web frameworks to capture http requests and auto-generates 
   - Type: ```boolean```
   - Default: ```True```
 
-- **redact_sensitive_data**: Redact sensitive data such as api_keys and auth tokens, before they leave the sdk. This is **enabled** by default. But **NO** rules are set.
+- **WithRedactSensitiveData**: Redact sensitive data such as api_keys and auth tokens, before they leave the sdk. This is **enabled** by default. But **NO** rules are set.
   - Example:
     ```
     {
@@ -77,9 +110,9 @@ This SDK instruments web frameworks to capture http requests and auto-generates 
     ```
   - Type: ```object```
 
-- **ignore_incoming_requests**: List of regexes to be ignored from instrumentation. This rule only applies to endpoints that are **served** by the application/server.
+- **WithIgnoreIncomingRequests**: List of regexes to be ignored from instrumentation. This rule only applies to endpoints that are **served** by the application/server.
   - Example:
-      ```python
+      ```golang
       {
           "ignore_incoming_requests": ["knockknock", "^get.*"]
       }
@@ -87,9 +120,9 @@ This SDK instruments web frameworks to capture http requests and auto-generates 
       The above example, will ignore any endpoint that contains the word "knockknock" in it, and all endpoints that start with get, and contain any characters after that.
   - Type: ```dict```
 
-- **ignore_outgoing_requests**: List of regexes to be ignored from instrumentation. This rule only applies to endpoints that are **called** by the application/server.
+- **WithIgnoreOutgoingRequests**: List of regexes to be ignored from instrumentation. This rule only applies to endpoints that are **called** by the application/server.
   - Example:
-      ```python
+      ```golang
       {
           "ignore_outgoing_requests": ["knockknock", "^get.*"]
       }
@@ -97,7 +130,7 @@ This SDK instruments web frameworks to capture http requests and auto-generates 
       The above example, will ignore any endpoint that contains the word "knockknock" in it, and all endpoints that start with get, and contain any characters after that.
   - Type: ```dict```
 
-- **buffer_interval_in_milliseconds**: The interval in milliseconds that the SDK waits before sending data to Postman. The default interval is 5000 milliseconds. This interval can be tweaked for lower or higher throughput systems.
+- **WithBufferIntervalInMilliseconds**: The interval in milliseconds that the SDK waits before sending data to Postman. The default interval is 5000 milliseconds. This interval can be tweaked for lower or higher throughput systems.
   - Type: ```int```
   - Default: ```5000```
 
