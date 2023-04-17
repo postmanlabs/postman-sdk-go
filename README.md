@@ -11,10 +11,9 @@ go get github.com/postmanlabs/postman-go-sdk
 ## Initializing the SDK
 
 ```golang
-import (
-	pm "github.com/postmanlabs/postman-go-sdk/postmansdk"
-)
+import pm "github.com/postmanlabs/postman-go-sdk/postmansdk"
 
+func main(){
 	router := gin.Default()
 	cleanup, err := pm.Initialize("<POSTMAN-COLLECTION-ID>", "<POSTMAN-API-KEY>")
 
@@ -23,6 +22,7 @@ import (
         // Registers postman SDK middleware
 		pm.InstrumentGin(router)
 	}
+}
 
 ```
 
