@@ -94,10 +94,10 @@ cleanup, err := pm.Initialize(
     ```JSON
     {
         "first_name": {
-            "type": "str"
+            "type": "string"
         },
         "age": {
-            "type": "int"
+            "type": "float64"
         }
     }
     ```
@@ -140,5 +140,5 @@ cleanup, err := pm.Initialize(
   - Type: `func([]string)`
 
 - **WithBufferIntervalInMilliseconds**: Interval between SDK data push to backend
-  - Type: `fun(int)`
+  - Type: `func(int)`
   - Default: `5000` milliseconds
