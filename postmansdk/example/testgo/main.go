@@ -15,7 +15,7 @@ func main() {
 	collectionId := "REPLACE-THIS"
 
 	router := gin.Default()
-	cleanup, err := pm.Initialize(collectionId, apiKey, pminterfaces.WithReceiverBaseUrl("REPLACE THIS"))
+	cleanup, err := pm.Initialize(collectionId, apiKey)
 
 	if err == nil {
 		defer cleanup(context.Background())
