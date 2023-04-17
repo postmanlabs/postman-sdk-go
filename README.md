@@ -20,9 +20,9 @@ func main(){
 	cleanup, err := pm.Initialize("<POSTMAN-COLLECTION-ID>", "<POSTMAN-API-KEY>")
 
 	if err == nil {
-		defer cleanup(context.Background())
-        // Registers postman SDK middleware
-		pm.InstrumentGin(router)
+	    defer cleanup(context.Background())
+            // Registers postman SDK middleware
+	    pm.InstrumentGin(router)
 	}
 }
 
