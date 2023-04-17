@@ -36,5 +36,9 @@ Such as:
 - Merge all the changes in `develop`.
 - Create a new branch from `develop`, update the `version.go` file with the updated version. Raise a PR, get it reviwed and merged to `develop`.
 - At this point, we have all the changes in `develop` which we want to tag and create a release for. Create a PR from `develop` to `master`.
-- Fast-forward merge the PR into `master`. This will trigger the `Release Go SDK` action, which will create the tag and Github release for the same.
+- Fast-forward merge the PR into `master` [**Do not merge via the UI**]. This will trigger the `Release Go SDK` action, which will create the tag and Github release for the same.
+```shell
+# On master branch
+git merge --ff develop
+```
 - Check the progress in Actions tab, and find the newly created release under Releases tag.
