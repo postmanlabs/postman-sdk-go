@@ -1,7 +1,5 @@
 package plugins
 
-import "regexp"
-
 var spanHttpBodyAttributesName = map[string]string{
 	"response": "http.response.body",
 	"request":  "http.request.body",
@@ -14,16 +12,14 @@ var defaultRedactionRules = map[string]string{
 	"pmBearerToken":      `Bearer [a-z0-9A-Z-._~+/]{15,1000}`,
 }
 
-type redactFunction func(data string, regExCompiled *regexp.Regexp) string
-
-var redactionMap = map[string]redactFunction{
-	"http.request.body":     redactBodyData,
-	"http.request.headers":  redactHeadersData,
-	"http.url":              redactUriStringData,
-	"http.request.query":    redactQueryData,
-	"http.target":           redactUriStringData,
-	"http.response.body":    redactBodyData,
-	"http.response.headers": redactHeadersData,
+var redactAttribute = map[string]bool{
+	"http.request.body":     true,
+	"http.request.headers":  true,
+	"http.url":              true,
+	"http.request.query":    true,
+	"http.target":           true,
+	"http.response.body":    true,
+	"http.response.headers": true,
 }
 
 const defaultRedactionReplacementString = "*****"

@@ -1,7 +1,6 @@
 package plugins
 
 import (
-	"encoding/json"
 	"regexp"
 
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
@@ -30,101 +29,43 @@ func (dr *DataRedaction) compileRules(rules map[string]string) {
 		combinedRules[k] = v
 	}
 
-	for rName, rCompiled := range combinedRules {
-		dr.ruleNameRegexMap[rName], _ = regexp.Compile("(?i)" + rCompiled)
+	for name, rule := range combinedRules {
+		rCompiled, err := regexp.Compile("(?i)" + rule)
+		if err != nil {
+			pmutils.Log.WithError(err).Error("Issue while compiling the rules.")
+		}
+		dr.ruleNameRegexMap[name] = rCompiled
 	}
 }
 
 func (dr *DataRedaction) redactData(span tracesdk.ReadOnlySpan) {
 	spanAttributes := span.Attributes()
 	for key, value := range spanAttributes {
-		if attrFunction, attExists := redactionMap[string(value.Key)]; attExists {
-			data := value.Value.AsString()
-			if data == "{}" {
+		if _, ok := redactAttribute[string(value.Key)]; !ok {
+			continue
+		}
+		data := value.Value.AsString()
+		for _, regEx := range dr.ruleNameRegexMap {
+			redactedData := obfuscateString(data, regEx)
+
+			// Do nothing when no redaction is performed.
+			if data == redactedData {
 				continue
 			}
 
-			// go over each user defined rules from config and perfrom redaction.
-			for _, regEx := range dr.ruleNameRegexMap {
-				redactedData := attrFunction(data, regEx)
-
-				if data == redactedData {
-					continue
-				}
-				jsonStr, err := json.Marshal(redactedData)
-				if err != nil {
-					pmutils.Log.WithError(err).Error("Issue while parsing the redacted data.")
-				}
-
-				spanAttributes[key].Value = attribute.StringValue(string(jsonStr))
-				data = redactedData
-			}
+			spanAttributes[key].Value = attribute.StringValue(redactedData)
+			// Rules are applied in order on input.
+			// If we don't update the value, only the last redaction rule is applied.
+			data = redactedData
 		}
 	}
 }
 
-func obfuscateJSONString(jsonString string, regexCompiled *regexp.Regexp) string {
-	jsonObj := make(map[string]interface{})
-
-	err := json.Unmarshal([]byte(jsonString), &jsonObj)
-	if err != nil {
-		return jsonString
-	}
-
-	for keyName, val := range jsonObj {
-		var dataVal string
-
-		if strVal, ok := val.(string); ok {
-			dataVal = strVal
-		} else {
-			// If the available data is not string, and of some complex type.
-			valBytes, err := json.Marshal(val)
-			if err != nil {
-				continue
-			}
-
-			dataVal = string(valBytes)
-		}
-
-		jsonObj[keyName] = regexCompiled.ReplaceAllString(dataVal, defaultRedactionReplacementString)
-	}
-
-	jsonBytes, err := json.Marshal(jsonObj)
-	if err != nil {
-		return jsonString
-	}
-
-	return string(jsonBytes)
-}
-
-func obfuscateString(textContent string, regexCompiled *regexp.Regexp) string {
-	return regexCompiled.ReplaceAllString(textContent, defaultRedactionReplacementString)
-}
-
-func redactHeadersData(data string, regExCompiled *regexp.Regexp) string {
+func obfuscateString(data string, regExCompiled *regexp.Regexp) string {
 	if regExCompiled == nil || data == "" {
 		return data
 	}
-	return obfuscateJSONString(data, regExCompiled)
-}
 
-func redactBodyData(data string, regExCompiled *regexp.Regexp) string {
-	if regExCompiled == nil || data == "" {
-		return data
-	}
-	return obfuscateString(data, regExCompiled)
-}
-
-func redactQueryData(data string, regExCompiled *regexp.Regexp) string {
-	if regExCompiled == nil || data == "" {
-		return data
-	}
-	return obfuscateJSONString(data, regExCompiled)
-}
-
-func redactUriStringData(data string, regExCompiled *regexp.Regexp) string {
-	if regExCompiled == nil || data == "" {
-		return data
-	}
-	return obfuscateString(data, regExCompiled)
+	redactedData := regExCompiled.ReplaceAllString(data, defaultRedactionReplacementString)
+	return redactedData
 }
