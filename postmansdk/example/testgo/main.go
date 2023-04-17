@@ -17,7 +17,7 @@ func main() {
 	}
 
 	router := gin.Default()
-	cleanup, err := pm.Initialize(collectionId, apiKey, pminterfaces.WithReceiverBaseUrl("https://trace-receiver.postman-preview.com"),
+	cleanup, err := pm.Initialize(collectionId, apiKey, pminterfaces.WithReceiverBaseUrl("REPLACE-THIS"),
 		pminterfaces.WithRedactSensitiveData(true, Rules))
 
 	if err == nil {
