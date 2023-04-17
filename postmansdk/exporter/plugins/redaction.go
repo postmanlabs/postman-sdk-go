@@ -13,7 +13,7 @@ func Redact(span tracesdk.ReadOnlySpan, rules map[string]string) {
 	pmutils.Log.Info("Running redaction for span: %+v ", span)
 	dr := DataRedaction{ruleNameRegexMap: make(map[string]*regexp.Regexp)}
 	dr.compileRules(rules)
-	dr.runRedaction(span)
+	dr.redactData(span)
 }
 
 type DataRedaction struct {
@@ -35,45 +35,28 @@ func (dr *DataRedaction) compileRules(rules map[string]string) {
 	}
 }
 
-func (dr *DataRedaction) runRedaction(span tracesdk.ReadOnlySpan) {
-	for _, requestSection := range []string{"request", "response"} {
-		dr.redactData(requestSection, span)
-	}
-}
-
-func (dr *DataRedaction) redactData(requestSection string, span tracesdk.ReadOnlySpan) {
-	var redactionMap map[string]redactFunction
-
-	if requestSection == "request" {
-		redactionMap = requestRedactionMap
-	} else if requestSection == "response" {
-		redactionMap = responseRedactionMap
-	} else {
-		return
-	}
-
+func (dr *DataRedaction) redactData(span tracesdk.ReadOnlySpan) {
 	spanAttributes := span.Attributes()
 	for key, value := range spanAttributes {
-		for attr, attrFunction := range redactionMap {
-			if string(value.Key) == attr {
-				data := value.Value.AsString()
-				if data == "" {
-					continue
-				}
+		attrFunction, attExists := redactionMap[string(value.Key)]
+		if attExists {
+			data := value.Value.AsString()
+			if data == "" {
+				continue
+			}
 
-				// go over each user defined rules from config and perfrom redaction.
-				for _, regEx := range dr.ruleNameRegexMap {
-					redactedData := attrFunction(data, regEx)
+			// go over each user defined rules from config and perfrom redaction.
+			for _, regEx := range dr.ruleNameRegexMap {
+				redactedData := attrFunction(data, regEx)
 
-					if data != redactedData {
-						jsonStr, err := json.Marshal(redactedData)
-						if err != nil {
-							pmutils.Log.WithError(err).Error("Issue while pasring the redacted data.")
-						}
-
-						spanAttributes[key].Value = attribute.StringValue(string(jsonStr))
-						data = redactedData
+				if data != redactedData {
+					jsonStr, err := json.Marshal(redactedData)
+					if err != nil {
+						pmutils.Log.WithError(err).Error("Issue while pasring the redacted data.")
 					}
+
+					spanAttributes[key].Value = attribute.StringValue(string(jsonStr))
+					data = redactedData
 				}
 			}
 		}

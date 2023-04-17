@@ -16,15 +16,12 @@ var defaultRedactionRules = map[string]string{
 
 type redactFunction func(data string, regExCompiled *regexp.Regexp) string
 
-var requestRedactionMap = map[string]redactFunction{
-	"http.request.body":    redactBodyData,
-	"http.request.headers": redactHeadersData,
-	"http.url":             redactUriStringData,
-	"http.request.query":   redactQueryData,
-	"http.target":          redactUriStringData,
-}
-
-var responseRedactionMap = map[string]redactFunction{
+var redactionMap = map[string]redactFunction{
+	"http.request.body":     redactBodyData,
+	"http.request.headers":  redactHeadersData,
+	"http.url":              redactUriStringData,
+	"http.request.query":    redactQueryData,
+	"http.target":           redactUriStringData,
 	"http.response.body":    redactBodyData,
 	"http.response.headers": redactHeadersData,
 }
