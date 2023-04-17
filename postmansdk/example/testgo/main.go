@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	pm "github.com/postmanlabs/postman-go-sdk/postmansdk"
-	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 )
 
 func main() {
