@@ -10,12 +10,15 @@ import (
 )
 
 func main() {
-
 	apiKey := "REPLACE-THIS"
 	collectionId := "REPLACE-THIS"
+	Rules := map[string]string{
+		"amazonAccessKeyId": "AKIA[0-9A-Z]{16}",
+	}
 
 	router := gin.Default()
-	cleanup, err := pm.Initialize(collectionId, apiKey, pminterfaces.WithReceiverBaseUrl("REPLACE THIS"))
+	cleanup, err := pm.Initialize(collectionId, apiKey, pminterfaces.WithReceiverBaseUrl("REPLACE-THIS"),
+		pminterfaces.WithRedactSensitiveData(true, Rules))
 
 	if err == nil {
 		defer cleanup(context.Background())

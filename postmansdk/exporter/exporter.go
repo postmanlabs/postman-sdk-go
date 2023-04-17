@@ -3,12 +3,13 @@ package exporter
 import (
 	"context"
 	"fmt"
+
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 
+	plugins "github.com/postmanlabs/postman-go-sdk/postmansdk/exporter/plugins"
 	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
-	plugins "github.com/postmanlabs/postman-go-sdk/postmansdk/exporter/plugins"
 )
 
 type PostmanExporter struct {
@@ -24,11 +25,18 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 	pmutils.Log.Debug("Spans to be exported are")
 
 	for idx, span := range ss {
-		pmutils.Log.Debug("Span number:%d span:%+v", idx, span)
+		defer func() {
+			if r := recover(); r != nil {
+				pmutils.Log.Debug("Issue faced while running plugins.")
+			}
+		}()
 
 		if e.Sdkconfig.Options.TruncateData {
-			// TODO: If error, drop this span
 			plugins.Truncate(span)
+		}
+
+		if e.Sdkconfig.Options.RedactSensitiveData.Enable {
+			plugins.Redact(span, e.Sdkconfig.Options.RedactSensitiveData.Rules)
 		}
 
 		pmutils.Log.Debug(fmt.Printf("Span number:%d span:%+v", idx, span))

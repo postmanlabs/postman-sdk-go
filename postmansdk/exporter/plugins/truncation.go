@@ -14,11 +14,6 @@ var DEFAULT_DATA_TRUNCATION_LEVEL = 2
 func Truncate(span tracesdk.ReadOnlySpan) {
 	pmutils.Log.Debug("Truncating data for span : %+v ", span)
 
-	spanHttpBodyAttributesName := map[string]interface{}{
-		"response": "http.response.body",
-		"request":  "http.request.body",
-	}
-
 	spanAttributes := span.Attributes()
 
 	for k, v := range spanAttributes {
