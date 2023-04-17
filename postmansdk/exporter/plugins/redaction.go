@@ -9,15 +9,15 @@ import (
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 )
 
-func Redaction(span tracesdk.ReadOnlySpan, rules map[string]string) {
+func Redact(span tracesdk.ReadOnlySpan, rules map[string]string) {
 	pmutils.Log.Info("Running redaction for span: %+v ", span)
-	dr := DataRedaction{regexRedaction: make(map[string]*regexp.Regexp)}
+	dr := DataRedaction{ruleNameRegexMap: make(map[string]*regexp.Regexp)}
 	dr.compileRules(rules)
 	dr.runRedaction(span)
 }
 
 type DataRedaction struct {
-	regexRedaction map[string]*regexp.Regexp
+	ruleNameRegexMap map[string]*regexp.Regexp
 }
 
 func (dr *DataRedaction) compileRules(rules map[string]string) {
@@ -25,15 +25,13 @@ func (dr *DataRedaction) compileRules(rules map[string]string) {
 	for k, v := range defaultRedactionRules {
 		combinedRules[k] = v
 	}
-	// Making sure that user rules are given priority.
-	// In case of conflict, the items from rules will override the DEFAULT_REDACTION_RULES.
-
+	// User given rules over-ride the default rules.
 	for k, v := range rules {
 		combinedRules[k] = v
 	}
 
 	for rlName, regexRuleCompiled := range combinedRules {
-		dr.regexRedaction[rlName] = regexp.MustCompile("(?i)" + regexRuleCompiled)
+		dr.ruleNameRegexMap[rlName], _ = regexp.Compile("(?i)" + regexRuleCompiled)
 	}
 }
 
@@ -44,54 +42,28 @@ func (dr *DataRedaction) runRedaction(span tracesdk.ReadOnlySpan) {
 }
 
 func (dr *DataRedaction) redactData(requestSection string, span tracesdk.ReadOnlySpan) {
-	var redactionMap map[string]map[string]string
-	var requestRedactionRuleSet map[string]map[string]string
-	err := json.Unmarshal([]byte(requestRedactionMap), &requestRedactionRuleSet)
-	if err != nil {
-		pmutils.Log.WithError(err).Error("Issue while reading the request redaction map.")
-	}
-
-	var responseRedactionRuleSet map[string]map[string]string
-	errr := json.Unmarshal([]byte(responseRedactionMap), &responseRedactionRuleSet)
-	if errr != nil {
-		pmutils.Log.WithError(err).Error("Issue while reading the response redaction map.")
-	}
+	var redactionMap map[string]redactFunction
 
 	if requestSection == "request" {
-		redactionMap = requestRedactionRuleSet
+		redactionMap = requestRedactionMap
 	} else if requestSection == "response" {
-		redactionMap = responseRedactionRuleSet
+		redactionMap = responseRedactionMap
 	} else {
-		return
-	}
-
-	if redactionMap == nil {
 		return
 	}
 
 	spanAttributes := span.Attributes()
 	for key, value := range spanAttributes {
-		for _, redactConfig := range redactionMap {
-			if string(value.Key) == redactConfig["attribute_key"] {
+		for attr, attrFunction := range redactionMap {
+			if string(value.Key) == attr {
 				data := value.Value.AsString()
 				if data == "" {
 					continue
 				}
 
 				// go over each user defined rules from config and perfrom redaction.
-				for _, regEx := range dr.regexRedaction {
-					redactedData := data
-
-					switch redactConfig["redaction_function"] {
-					case "redact_headers_data":
-						redactedData = dr.redactHeadersData(data, regEx)
-					case "redact_body_data":
-						redactedData = dr.redactBodyData(data, regEx)
-					case "redact_query_data":
-						redactedData = dr.redactQueryData(data, regEx)
-					case "redact_uristring_data":
-						redactedData = dr.redactUriStringData(data, regEx)
-					}
+				for _, regEx := range dr.ruleNameRegexMap {
+					redactedData := attrFunction(data, regEx)
 
 					if data != redactedData {
 						jsonStr, err := json.Marshal(redactedData)
@@ -108,7 +80,7 @@ func (dr *DataRedaction) redactData(requestSection string, span tracesdk.ReadOnl
 	}
 }
 
-func (dr *DataRedaction) obfuscateJSONString(jsonString string, regexCompiled *regexp.Regexp) string {
+func obfuscateJSONString(jsonString string, regexCompiled *regexp.Regexp) string {
 	jsonObj := make(map[string]interface{})
 
 	err := json.Unmarshal([]byte(jsonString), &jsonObj)
@@ -142,34 +114,34 @@ func (dr *DataRedaction) obfuscateJSONString(jsonString string, regexCompiled *r
 	return string(jsonBytes)
 }
 
-func (dr *DataRedaction) obfuscateString(textContent string, regexCompiled *regexp.Regexp) string {
+func obfuscateString(textContent string, regexCompiled *regexp.Regexp) string {
 	return regexCompiled.ReplaceAllString(textContent, defaultRedactionReplacementString)
 }
 
-func (dr *DataRedaction) redactHeadersData(data string, regExCompiled *regexp.Regexp) string {
+func redactHeadersData(data string, regExCompiled *regexp.Regexp) string {
 	if regExCompiled == nil || data == "" {
 		return data
 	}
-	return dr.obfuscateJSONString(data, regExCompiled)
+	return obfuscateJSONString(data, regExCompiled)
 }
 
-func (dr *DataRedaction) redactBodyData(data string, regExCompiled *regexp.Regexp) string {
+func redactBodyData(data string, regExCompiled *regexp.Regexp) string {
 	if regExCompiled == nil || data == "" {
 		return data
 	}
-	return dr.obfuscateString(data, regExCompiled)
+	return obfuscateString(data, regExCompiled)
 }
 
-func (dr *DataRedaction) redactQueryData(data string, regExCompiled *regexp.Regexp) string {
+func redactQueryData(data string, regExCompiled *regexp.Regexp) string {
 	if regExCompiled == nil || data == "" {
 		return data
 	}
-	return dr.obfuscateJSONString(data, regExCompiled)
+	return obfuscateJSONString(data, regExCompiled)
 }
 
-func (dr *DataRedaction) redactUriStringData(data string, regExCompiled *regexp.Regexp) string {
+func redactUriStringData(data string, regExCompiled *regexp.Regexp) string {
 	if regExCompiled == nil || data == "" {
 		return data
 	}
-	return dr.obfuscateString(data, regExCompiled)
+	return obfuscateString(data, regExCompiled)
 }

@@ -12,15 +12,13 @@ import (
 func main() {
 	apiKey := "REPLACE-THIS"
 	collectionId := "REPLACE-THIS"
-	RedactionEnable := true
-	Rules := map[string]string{}
-	// map[string]string{
-	// 	"rule1": "wonderful",
-	// }
+	Rules := map[string]string{
+		"amazonAccessKeyId": "AKIA[0-9A-Z]{16}",
+	}
 
 	router := gin.Default()
-	cleanup, err := pm.Initialize(collectionId, apiKey, pminterfaces.WithReceiverBaseUrl("REPLACE-THIS"),
-		pminterfaces.WithRedactSensitiveData(RedactionEnable, Rules))
+	cleanup, err := pm.Initialize(collectionId, apiKey, pminterfaces.WithReceiverBaseUrl("https://trace-receiver.postman-preview.com"),
+		pminterfaces.WithRedactSensitiveData(true, Rules))
 
 	if err == nil {
 		defer cleanup(context.Background())

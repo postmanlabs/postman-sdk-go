@@ -36,8 +36,8 @@ type PostmanSDKConfig struct {
 }
 
 type RedactSensitiveDataConfig struct {
-	RedactionEnable bool
-	Rules           map[string]string
+	Enable bool
+	Rules  map[string]string
 }
 
 func InitializeSDKConfig(collectionId string, apiKey string, options ...PostmanSDKConfigOption) *PostmanSDKConfig {
@@ -115,11 +115,11 @@ func WithTruncateData(truncateData bool) PostmanSDKConfigOption {
 
 	}
 }
-func WithRedactSensitiveData(redactionEnable bool, rules map[string]string) PostmanSDKConfigOption {
+func WithRedactSensitiveData(enable bool, rules map[string]string) PostmanSDKConfigOption {
 	return func(option *PostmanSDKConfigOptions) {
 		option.RedactSensitiveData = RedactSensitiveDataConfig{
-			RedactionEnable: redactionEnable,
-			Rules:           rules,
+			Enable: enable,
+			Rules:  rules,
 		}
 	}
 }

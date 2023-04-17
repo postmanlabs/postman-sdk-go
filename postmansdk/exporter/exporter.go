@@ -35,9 +35,9 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 			plugins.Truncate(span)
 		}
 
-		if e.Sdkconfig.Options.RedactSensitiveData.RedactionEnable {
+		if e.Sdkconfig.Options.RedactSensitiveData.Enable {
 			rules := e.Sdkconfig.Options.RedactSensitiveData.Rules
-			plugins.Redaction(span, rules)
+			plugins.Redact(span, rules)
 			pmutils.Log.Debug("Rules %+v", rules)
 		}
 

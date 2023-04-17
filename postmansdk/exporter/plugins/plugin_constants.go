@@ -1,5 +1,7 @@
 package plugins
 
+import "regexp"
+
 var spanHttpBodyAttributesName = map[string]string{
 	"response": "http.response.body",
 	"request":  "http.request.body",
@@ -12,38 +14,19 @@ var defaultRedactionRules = map[string]string{
 	"pmBearerToken":      `Bearer [a-z0-9A-Z-._~+/]{15,1000}`,
 }
 
-const requestRedactionMap = `{
-    "body": {
-        "attribute_key":      "http.request.body",
-        "redaction_function": "redact_body_data"
-    },
-    "headers": {
-        "attribute_key":      "http.request.headers",
-        "redaction_function": "redact_headers_data"
-    },
-    "queryUrl": {
-        "attribute_key":      "http.url",
-        "redaction_function": "redact_uristring_data"
-    },
-    "queryString": {
-        "attribute_key":      "http.request.query",
-        "redaction_function": "redact_query_data"
-    },
-    "targetUrl": {
-        "attribute_key":      "http.target",
-        "redaction_function": "redact_uristring_data"
-    }
-}`
+type redactFunction func(data string, regExCompiled *regexp.Regexp) string
 
-const responseRedactionMap = `{
-	"body": {
-		"attribute_key":      "http.response.body",
-		"redaction_function": "redact_body_data"
-	},
-	"headers": {
-		"attribute_key":      "http.response.headers",
-		"redaction_function": "redact_headers_data"
-	}
-}`
+var requestRedactionMap = map[string]redactFunction{
+	"http.request.body":    redactBodyData,
+	"http.request.headers": redactHeadersData,
+	"http.url":             redactUriStringData,
+	"http.request.query":   redactQueryData,
+	"http.target":          redactUriStringData,
+}
+
+var responseRedactionMap = map[string]redactFunction{
+	"http.response.body":    redactBodyData,
+	"http.response.headers": redactHeadersData,
+}
 
 const defaultRedactionReplacementString = "*****"
