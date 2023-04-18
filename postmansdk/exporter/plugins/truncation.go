@@ -12,7 +12,7 @@ import (
 var DEFAULT_DATA_TRUNCATION_LEVEL = 2
 
 func Truncate(span tracesdk.ReadOnlySpan) error {
-	pmutils.Log.WithField("Truncating data for span - ", span)
+	pmutils.Log.WithField("span", span).Info("Truncating data for span.")
 
 	spanAttributes := span.Attributes()
 
@@ -20,7 +20,7 @@ func Truncate(span tracesdk.ReadOnlySpan) error {
 		for attributeType, attributeName := range spanHttpBodyAttributesName {
 			if string(v.Key) == attributeName {
 
-				pmutils.Log.WithField("Running truncation for - ", attributeType)
+				pmutils.Log.WithField("attribute type - ", attributeType).Info("Running truncation for")
 
 				data := spanAttributes[k].Value.AsString()
 
