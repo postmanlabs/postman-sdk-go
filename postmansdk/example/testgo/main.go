@@ -17,13 +17,12 @@ func main() {
 	}
 
 	router := gin.Default()
-	cleanup, err := pm.Initialize(collectionId, apiKey, pminterfaces.WithReceiverBaseUrl("REPLACE-THIS"),
-		pminterfaces.WithRedactSensitiveData(true, Rules))
-
-	if err == nil {
-		defer cleanup(context.Background())
-		pm.InstrumentGin(router)
-	}
+	pm.Initialize(
+		collectionId,
+		apiKey, pminterfaces.WithReceiverBaseUrl("REPLACE-THIS"),
+		pminterfaces.WithRedactSensitiveData(true, Rules),
+		pminterfaces.WithGinInstrumentation(router),
+	)
 
 	router.GET("/albums", getAlbums)
 	router.GET("/albums/:id", getAlbumByID)

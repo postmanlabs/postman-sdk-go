@@ -26,20 +26,17 @@ type postmanSDK struct {
 
 var psdk *postmanSDK
 
-func errorCleanup(context.Context) error {
-	return nil
-}
-
 func Initialize(
 	collectionId string,
 	apiKey string,
 	options ...pminterfaces.PostmanSDKConfigOption,
-) (func(context.Context) error, error) {
+) {
 
 	sdkconfig := pminterfaces.InitializeSDKConfig(collectionId, apiKey, options...)
 
 	if !sdkconfig.Options.Enable {
-		return errorCleanup, fmt.Errorf("postman SDK is not enabled")
+		pmutils.Log.Error("postman SDK is not enabled")
+		return
 	}
 
 	if sdkconfig.Options.Debug {
@@ -56,7 +53,8 @@ func Initialize(
 
 	// Register live collection
 	if err := pmreceiver.UpdateConfig(sdkconfig); err != nil {
-		return errorCleanup, err
+		pmutils.Log.Error(err)
+		return
 	}
 
 	ctx := context.Background()
@@ -65,13 +63,14 @@ func Initialize(
 
 	if err != nil {
 		pmutils.Log.WithError(err).Error("Failed to create a new exporter")
-
-		return errorCleanup, err
+		defer shutdown(context.Background())
+		return
 	}
 
 	go pmreceiver.HealthCheck(psdk.Config)
 
-	return shutdown, nil
+	psdk.registerInstrumentations()
+
 }
 
 func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporter, error) {
@@ -135,4 +134,12 @@ func (psdk *postmanSDK) installExportPipeline(
 	otel.SetTracerProvider(tracerProvider)
 
 	return tracerProvider.Shutdown, nil
+}
+
+func (psdk *postmanSDK) registerInstrumentations() {
+	if psdk.Config.Options.GinInstrumentation == nil {
+		return
+	}
+	InstrumentGin(psdk.Config.Options.GinInstrumentation)
+
 }

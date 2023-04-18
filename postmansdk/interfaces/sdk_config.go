@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
 
@@ -26,6 +27,7 @@ type PostmanSDKConfigOptions struct {
 	RedactSensitiveData          RedactSensitiveDataConfig
 	IgnoreOutgoingRequests       []string
 	IgnoreIncomingRequests       []string
+	GinInstrumentation           *gin.Engine
 }
 
 type PostmanSDKConfig struct {
@@ -131,5 +133,11 @@ func WithIgnoreOutgoingRequests(ignoreOutgoingRequests []string) PostmanSDKConfi
 func WithIgnoreIncomingRequests(ignoreIncomingRequests []string) PostmanSDKConfigOption {
 	return func(option *PostmanSDKConfigOptions) {
 		option.IgnoreIncomingRequests = ignoreIncomingRequests
+	}
+}
+
+func WithGinInstrumentation(router *gin.Engine) PostmanSDKConfigOption {
+	return func(option *PostmanSDKConfigOptions) {
+		option.GinInstrumentation = router
 	}
 }
