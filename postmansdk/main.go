@@ -3,6 +3,7 @@ package postmansdk
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -35,7 +36,7 @@ func Initialize(
 	sdkconfig := pminterfaces.InitializeSDKConfig(collectionId, apiKey, options...)
 
 	if !sdkconfig.Options.Enable {
-		pmutils.Log.Error("postman SDK is not enabled")
+		log.Println(fmt.Errorf("postman SDK is not enabled"))
 		return
 	}
 
