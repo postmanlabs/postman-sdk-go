@@ -11,8 +11,8 @@ import (
 
 var DEFAULT_DATA_TRUNCATION_LEVEL = 2
 
-func Truncate(span tracesdk.ReadOnlySpan) error {
-	pmutils.Log.WithField("Truncating data for span - ", span)
+func Truncate(span tracesdk.ReadOnlySpan) {
+	pmutils.Log.Debug("Truncating data for span : %+v ", span)
 
 	spanAttributes := span.Attributes()
 
@@ -20,7 +20,7 @@ func Truncate(span tracesdk.ReadOnlySpan) error {
 		for attributeType, attributeName := range spanHttpBodyAttributesName {
 			if string(v.Key) == attributeName {
 
-				pmutils.Log.WithField("Running truncation for - ", attributeType)
+				pmutils.Log.Debug("Running truncation for %+v at %+v \n", attributeType, attributeName)
 
 				data := spanAttributes[k].Value.AsString()
 
@@ -28,24 +28,22 @@ func Truncate(span tracesdk.ReadOnlySpan) error {
 
 				err := json.Unmarshal([]byte(data), &jdata)
 				if err != nil {
-					pmutils.Log.WithError(err).Error("Failed to umarshall data.")
+					pmutils.Log.Debug(err)
 					// Supporting only content-type=application/json
-					return err
+					return
 				}
 
 				truncatedData := trimBodyValuesToTypes(jdata, 1)
 
 				jsonData, err := json.Marshal(truncatedData)
 				if err != nil {
-					pmutils.Log.WithError(err).Error("Failed to marshall data.")
-					return err
+					pmutils.Log.Debug(err)
 				}
 
 				spanAttributes[k].Value = attribute.StringValue(string(jsonData))
 			}
 		}
 	}
-	return nil
 }
 
 func trimBodyValuesToTypes(data interface{}, currentLevel int) interface{} {
