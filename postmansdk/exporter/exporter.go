@@ -2,7 +2,6 @@ package exporter
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
@@ -48,7 +47,7 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 		}
 
 		processedSpans = append(processedSpans, span)
-		pmutils.Log.Debug(fmt.Printf("Span number:%d span:%+v", idx, span))
+		pmutils.Log.WithField("Span - ", span)
 	}
 	return e.Exporter.ExportSpans(ctx, processedSpans)
 }
