@@ -8,18 +8,22 @@ import (
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 )
 
-func Redact(span tracesdk.ReadOnlySpan, rules map[string]string) {
-	pmutils.Log.Info("Running redaction for span: %+v ", span)
+func Redact(span tracesdk.ReadOnlySpan, rules map[string]string) error {
+	pmutils.Log.WithField("Running redaction for span", span)
 	dr := DataRedaction{ruleNameRegexMap: make(map[string]*regexp.Regexp)}
-	dr.compileRules(rules)
+	err := dr.compileRules(rules)
 	dr.redactData(span)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type DataRedaction struct {
 	ruleNameRegexMap map[string]*regexp.Regexp
 }
 
-func (dr *DataRedaction) compileRules(rules map[string]string) {
+func (dr *DataRedaction) compileRules(rules map[string]string) error {
 	combinedRules := make(map[string]string)
 	for k, v := range defaultRedactionRules {
 		combinedRules[k] = v
@@ -33,9 +37,11 @@ func (dr *DataRedaction) compileRules(rules map[string]string) {
 		rCompiled, err := regexp.Compile("(?i)" + rule)
 		if err != nil {
 			pmutils.Log.WithError(err).Error("Issue while compiling the rules.")
+			return err
 		}
 		dr.ruleNameRegexMap[name] = rCompiled
 	}
+	return nil
 }
 
 func (dr *DataRedaction) redactData(span tracesdk.ReadOnlySpan) {
