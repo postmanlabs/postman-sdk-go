@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
@@ -95,6 +96,15 @@ func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporte
 	return exporter, err
 }
 
+func getDebugExporter() (sdktrace.SpanExporter, error) {
+	return stdouttrace.New(
+		// Use human-readable output.
+		stdouttrace.WithPrettyPrint(),
+		// Do not print timestamps for the demo.
+		stdouttrace.WithoutTimestamps(),
+	)
+}
+
 func (psdk *postmanSDK) installExportPipeline(
 	ctx context.Context,
 ) (func(context.Context) error, error) {
@@ -132,6 +142,13 @@ func (psdk *postmanSDK) installExportPipeline(
 		),
 		sdktrace.WithResource(resources),
 	)
+	if psdk.Config.Options.Debug {
+		dex, err := getDebugExporter()
+		if err != nil {
+			pmutils.Log.WithError(err).Error("Creating Debug Exporter failed")
+		}
+		tracerProvider.RegisterSpanProcessor(sdktrace.NewBatchSpanProcessor(dex))
+	}
 	otel.SetTracerProvider(tracerProvider)
 
 	return tracerProvider.Shutdown, nil
