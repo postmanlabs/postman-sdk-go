@@ -23,7 +23,7 @@ type PostmanSDKConfigOptions struct {
 	Enable                       bool
 	ReceiverBaseUrl              string
 	TruncateData                 bool
-	RedactSensitiveData          map[string]interface{}
+	RedactSensitiveData          RedactSensitiveDataConfig
 	IgnoreOutgoingRequests       []string
 	IgnoreIncomingRequests       []string
 }
@@ -33,6 +33,11 @@ type PostmanSDKConfig struct {
 	CollectionId string
 	Options      PostmanSDKConfigOptions
 	mu           sync.Mutex
+}
+
+type RedactSensitiveDataConfig struct {
+	Enable bool
+	Rules  map[string]string
 }
 
 func InitializeSDKConfig(collectionId string, apiKey string, options ...PostmanSDKConfigOption) *PostmanSDKConfig {
@@ -80,48 +85,4 @@ func (pc *PostmanSDKConfig) IsSuppressed() bool {
 	pc.mu.Lock()
 	defer pc.mu.Unlock()
 	return !pc.Options.Enable
-}
-
-func WithBufferIntervalInMilliseconds(bufferMillis int) PostmanSDKConfigOption {
-	return func(option *PostmanSDKConfigOptions) {
-		option.BufferIntervalInMilliseconds = time.Duration(bufferMillis) * time.Millisecond
-	}
-}
-
-func WithDebug(debug bool) PostmanSDKConfigOption {
-	return func(option *PostmanSDKConfigOptions) {
-		option.Debug = debug
-	}
-}
-
-func WithEnable(enable bool) PostmanSDKConfigOption {
-	return func(option *PostmanSDKConfigOptions) {
-		option.Enable = enable
-	}
-}
-func WithReceiverBaseUrl(receiverBaseUrl string) PostmanSDKConfigOption {
-	return func(option *PostmanSDKConfigOptions) {
-		option.ReceiverBaseUrl = receiverBaseUrl
-	}
-}
-func WithTruncateData(truncateData bool) PostmanSDKConfigOption {
-	return func(option *PostmanSDKConfigOptions) {
-		option.TruncateData = truncateData
-
-	}
-}
-func WithRedactSensitiveData(redactSensitiveData map[string]interface{}) PostmanSDKConfigOption {
-	return func(option *PostmanSDKConfigOptions) {
-		option.RedactSensitiveData = redactSensitiveData
-	}
-}
-func WithIgnoreOutgoingRequests(ignoreOutgoingRequests []string) PostmanSDKConfigOption {
-	return func(option *PostmanSDKConfigOptions) {
-		option.IgnoreOutgoingRequests = ignoreOutgoingRequests
-	}
-}
-func WithIgnoreIncomingRequests(ignoreIncomingRequests []string) PostmanSDKConfigOption {
-	return func(option *PostmanSDKConfigOptions) {
-		option.IgnoreIncomingRequests = ignoreIncomingRequests
-	}
 }

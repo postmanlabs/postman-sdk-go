@@ -4,11 +4,21 @@ import (
 	"net/http"
 	"regexp"
 
-	instrumentations_gin "github.com/postmanlabs/postman-go-sdk/postmansdk/instrumentations/gin"
-
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+
+	instrumentations_gin "github.com/postmanlabs/postman-go-sdk/postmansdk/instrumentations/gin"
+	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 )
+
+type integrations struct{}
+
+func (i *integrations) Gin(router *gin.Engine) {
+	if !psdk.Config.Options.Enable {
+		return
+	}
+	InstrumentGin(router, psdk.Config)
+}
 
 // getFilters reads the ignoreIncomingRequests array and produces a otelgin.Option
 // to fiter out requests that match the regex.
@@ -46,7 +56,7 @@ func getMiddlewareOptions() []otelgin.Option {
 	return middlewareOptions
 }
 
-func InstrumentGin(router *gin.Engine) {
+func InstrumentGin(router *gin.Engine, sdkconfig *pminterfaces.PostmanSDKConfig) {
 	router.Use(otelgin.Middleware("", getMiddlewareOptions()...))
-	router.Use(instrumentations_gin.Middleware())
+	router.Use(instrumentations_gin.Middleware(sdkconfig))
 }

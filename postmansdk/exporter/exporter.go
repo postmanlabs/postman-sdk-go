@@ -6,6 +6,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 
+	plugins "github.com/postmanlabs/postman-go-sdk/postmansdk/exporter/plugins"
 	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
@@ -21,8 +22,29 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 	}
 
 	pmutils.Log.Debug("Spans to be exported are")
-	for idx, span := range ss {
-		pmutils.Log.Debug("Span number:%d span:%+v", idx, span)
+
+	var processedSpans []tracesdk.ReadOnlySpan
+	for _, span := range ss {
+		if e.Sdkconfig.Options.TruncateData {
+			err := plugins.Truncate(span)
+			if err != nil {
+				pmutils.Log.WithError(err).Error("Failure in truncation.")
+				pmutils.Log.WithField("span", span).Debug("Skipping the span.")
+				continue
+			}
+		}
+
+		if e.Sdkconfig.Options.RedactSensitiveData.Enable {
+			err := plugins.Redact(span, e.Sdkconfig.Options.RedactSensitiveData.Rules)
+			if err != nil {
+				pmutils.Log.WithError(err).Error("Failure in redaction.")
+				pmutils.Log.WithField("span", span).Debug("Skipping the span.")
+				continue
+			}
+		}
+
+		processedSpans = append(processedSpans, span)
+		pmutils.Log.WithField("span attributes - ", span.Attributes()).Debug("Span - ")
 	}
-	return e.Exporter.ExportSpans(ctx, ss)
+	return e.Exporter.ExportSpans(ctx, processedSpans)
 }
