@@ -12,8 +12,6 @@ import (
 var DEFAULT_DATA_TRUNCATION_LEVEL = 2
 
 func Truncate(span tracesdk.ReadOnlySpan) error {
-	pmutils.Log.WithField("span", span).Debug("Truncating data for span.")
-
 	spanAttributes := span.Attributes()
 
 	for k, v := range spanAttributes {
