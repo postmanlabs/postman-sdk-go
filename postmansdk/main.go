@@ -21,25 +21,21 @@ import (
 )
 
 type postmanSDK struct {
-	Config *pminterfaces.PostmanSDKConfig
+	Config       *pminterfaces.PostmanSDKConfig
+	Integrations integrations
 }
 
-var psdk *postmanSDK
-
-func errorCleanup(context.Context) error {
-	return nil
-}
+var psdk postmanSDK
 
 func Initialize(
 	collectionId string,
 	apiKey string,
 	options ...pminterfaces.PostmanSDKConfigOption,
-) (func(context.Context) error, error) {
+) (postmanSDK, error) {
 
 	sdkconfig := pminterfaces.InitializeSDKConfig(collectionId, apiKey, options...)
-
-	if !sdkconfig.Options.Enable {
-		return errorCleanup, fmt.Errorf("postman SDK is not enabled")
+	psdk = postmanSDK{
+		Config: sdkconfig,
 	}
 
 	if sdkconfig.Options.Debug {
@@ -48,15 +44,15 @@ func Initialize(
 		pmutils.CreateNewLogger(logrus.ErrorLevel)
 	}
 
-	pmutils.Log.WithField("sdkconfig", sdkconfig).Info("SdkConfig is intialized")
-
-	psdk = &postmanSDK{
-		Config: sdkconfig,
+	if !sdkconfig.Options.Enable {
+		pmutils.Log.Error("Postman SDK is not enabled")
+		return psdk, fmt.Errorf("postman SDK is not enabled")
 	}
 
 	// Register live collection
 	if err := pmreceiver.UpdateConfig(sdkconfig); err != nil {
-		return errorCleanup, err
+		pmutils.Log.WithError(err).Error("Postman SDK disabled")
+		return psdk, err
 	}
 
 	ctx := context.Background()
@@ -65,13 +61,14 @@ func Initialize(
 
 	if err != nil {
 		pmutils.Log.WithError(err).Error("Failed to create a new exporter")
-
-		return errorCleanup, err
+		defer shutdown(context.Background())
+		return psdk, err
 	}
 
 	go pmreceiver.HealthCheck(psdk.Config)
 
-	return shutdown, nil
+	pmutils.Log.WithField("sdkconfig", sdkconfig).Info("Postman SDK initialized")
+	return psdk, nil
 }
 
 func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporter, error) {

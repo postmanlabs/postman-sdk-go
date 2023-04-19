@@ -1,12 +1,9 @@
 package main
 
 import (
-	"context"
-
 	"github.com/gin-gonic/gin"
 
 	pm "github.com/postmanlabs/postman-go-sdk/postmansdk"
-	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 )
 
 func main() {
@@ -17,12 +14,14 @@ func main() {
 	}
 
 	router := gin.Default()
-	cleanup, err := pm.Initialize(collectionId, apiKey, pminterfaces.WithReceiverBaseUrl("REPLACE-THIS"),
-		pminterfaces.WithRedactSensitiveData(true, Rules))
-
+	psdk, err := pm.Initialize(
+		collectionId,
+		apiKey,
+		pm.WithReceiverBaseUrl("REPLACE-THIS"),
+		pm.WithRedactSensitiveData(true, Rules),
+	)
 	if err == nil {
-		defer cleanup(context.Background())
-		pm.InstrumentGin(router)
+		psdk.Integrations.Gin(router)
 	}
 
 	router.GET("/albums", getAlbums)

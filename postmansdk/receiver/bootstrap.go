@@ -51,11 +51,11 @@ func callBootstrapApi(sdkconfig *pminterfaces.PostmanSDKConfig) bootstrapApiResp
 	}
 
 	resp := makePostRequest(BOOTSTRAP_PATH, payload, sdkconfig)
-	
+
 	var br bootstrapApiResponse
 	var body bResponseBody
 	br.ar = resp
-	
+
 	// Body will be nill in case request failed
 	if resp.Body == nil {
 		return br
@@ -81,7 +81,7 @@ func Bootstrap(sdkconfig *pminterfaces.PostmanSDKConfig) (bool, error) {
 		resp := callBootstrapApi(sdkconfig)
 
 		if resp.ar.Error != nil {
-			pmutils.Log.Debug("Bootstrap API Failed resp: %+v", resp)
+			pmutils.Log.Debug(fmt.Sprintf("Bootstrap API Failed resp: %+v", resp))
 			exponentialDelay(retries, BOOTSTRAP_RETRY_DELAY_SECONDS)
 
 		} else if resp.ar.StatusCode == http.StatusOK {
