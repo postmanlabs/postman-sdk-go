@@ -3,9 +3,9 @@ package postmansdk
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 
 	"go.opentelemetry.io/otel"
@@ -22,23 +22,31 @@ import (
 )
 
 type postmanSDK struct {
-	Config *pminterfaces.PostmanSDKConfig
+	Config       *pminterfaces.PostmanSDKConfig
+	Integrations integrations
 }
 
-var psdk *postmanSDK
+var psdk postmanSDK
+
+type integrations struct {
+	Name []string
+}
+
+func (i *integrations) Gin(router *gin.Engine) {
+	InstrumentGin(router, psdk.Config)
+}
 
 func Initialize(
 	collectionId string,
 	apiKey string,
 	options ...pminterfaces.PostmanSDKConfigOption,
-) {
+) (postmanSDK, error) {
 
 	sdkconfig := pminterfaces.InitializeSDKConfig(collectionId, apiKey, options...)
-
-	if !sdkconfig.Options.Enable {
-		log.Println(fmt.Errorf("postman SDK is not enabled"))
-		return
+	psdk = postmanSDK{
+		Config: sdkconfig,
 	}
+	psdk.Integrations = integrations{Name: []string{pmutils.GIN}}
 
 	if sdkconfig.Options.Debug {
 		pmutils.CreateNewLogger(logrus.DebugLevel)
@@ -46,16 +54,15 @@ func Initialize(
 		pmutils.CreateNewLogger(logrus.ErrorLevel)
 	}
 
-	pmutils.Log.WithField("sdkconfig", sdkconfig).Info("SdkConfig is intialized")
-
-	psdk = &postmanSDK{
-		Config: sdkconfig,
+	if !sdkconfig.Options.Enable {
+		pmutils.Log.Error("Postman SDK is not enabled")
+		return psdk, fmt.Errorf("postman SDK is not enabled")
 	}
 
 	// Register live collection
 	if err := pmreceiver.UpdateConfig(sdkconfig); err != nil {
-		pmutils.Log.Error(err)
-		return
+		pmutils.Log.WithError(err).Error("Postman SDK disbaled")
+		return psdk, err
 	}
 
 	ctx := context.Background()
@@ -65,13 +72,13 @@ func Initialize(
 	if err != nil {
 		pmutils.Log.WithError(err).Error("Failed to create a new exporter")
 		defer shutdown(context.Background())
-		return
+		return psdk, err
 	}
 
 	go pmreceiver.HealthCheck(psdk.Config)
 
-	psdk.registerInstrumentations()
-
+	pmutils.Log.WithField("sdkconfig", sdkconfig).Info("Postman SDK initialized")
+	return psdk, nil
 }
 
 func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporter, error) {
@@ -135,12 +142,4 @@ func (psdk *postmanSDK) installExportPipeline(
 	otel.SetTracerProvider(tracerProvider)
 
 	return tracerProvider.Shutdown, nil
-}
-
-func (psdk *postmanSDK) registerInstrumentations() {
-	if psdk.Config.Options.GinInstrumentation == nil {
-		return
-	}
-	InstrumentGin(psdk.Config.Options.GinInstrumentation)
-
 }

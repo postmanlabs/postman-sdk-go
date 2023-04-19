@@ -27,7 +27,6 @@ type PostmanSDKConfigOptions struct {
 	RedactSensitiveData          RedactSensitiveDataConfig
 	IgnoreOutgoingRequests       []string
 	IgnoreIncomingRequests       []string
-	GinInstrumentation           *gin.Engine
 }
 
 type PostmanSDKConfig struct {

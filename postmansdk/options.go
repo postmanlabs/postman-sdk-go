@@ -53,9 +53,3 @@ func WithIgnoreIncomingRequests(ignoreIncomingRequests []string) pminterfaces.Po
 		option.IgnoreIncomingRequests = ignoreIncomingRequests
 	}
 }
-
-func WithGinInstrumentation(router *gin.Engine) pminterfaces.PostmanSDKConfigOption {
-	return func(option *pminterfaces.PostmanSDKConfigOptions) {
-		option.GinInstrumentation = router
-	}
-}
