@@ -48,7 +48,7 @@ import (
 	pm "github.com/postmanlabs/postman-go-sdk/postmansdk"
 )
 
-cleanup, err := pm.Initialize(
+sdk, err := pm.Initialize(
     "<POSTMAN-COLLECTION-ID>",
     "<POSTMAN-API-KEY>",
     pm.WithDebug(false),
