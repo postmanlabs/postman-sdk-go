@@ -1,8 +1,10 @@
 package plugins
 
-var spanHttpBodyAttributesName = map[string]string{
-	"response": "http.response.body",
-	"request":  "http.request.body",
+// Key: attribute name
+// Value: should truncate or not
+var attrNameTruncate = map[string]bool{
+	"http.request.body":  true,
+	"http.response.body": true,
 }
 
 var defaultRedactionRules = map[string]string{
@@ -12,7 +14,9 @@ var defaultRedactionRules = map[string]string{
 	"pmBearerToken":      `Bearer [a-z0-9A-Z-._~+/]{15,1000}`,
 }
 
-var redactAttribute = map[string]bool{
+// Key: attribute name
+// Value: should redact or not
+var attrNameRedact = map[string]bool{
 	"http.request.body":     true,
 	"http.request.headers":  true,
 	"http.url":              true,

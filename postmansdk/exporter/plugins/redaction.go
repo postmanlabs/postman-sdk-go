@@ -9,7 +9,7 @@ import (
 )
 
 func Redact(span tracesdk.ReadOnlySpan, rules map[string]string) error {
-	pmutils.Log.WithField("span", span).Info("Running redaction for span")
+	pmutils.Log.WithField("span", span).Debug("Running redaction for span")
 	dr := DataRedaction{ruleNameRegexMap: make(map[string]*regexp.Regexp)}
 	err := dr.compileRules(rules)
 	if err != nil {
@@ -48,7 +48,7 @@ func (dr *DataRedaction) compileRules(rules map[string]string) error {
 func (dr *DataRedaction) redactData(span tracesdk.ReadOnlySpan) {
 	spanAttributes := span.Attributes()
 	for key, value := range spanAttributes {
-		if _, ok := redactAttribute[string(value.Key)]; !ok {
+		if _, ok := attrNameRedact[string(value.Key)]; !ok {
 			continue
 		}
 		data := value.Value.AsString()
