@@ -11,39 +11,49 @@ import (
 
 var DEFAULT_DATA_TRUNCATION_LEVEL = 2
 
-func Truncate(span tracesdk.ReadOnlySpan) {
-	pmutils.Log.Debug("Truncating data for span : %+v ", span)
+func Truncate(span tracesdk.ReadOnlySpan) error {
+	pmutils.Log.WithField("span", span).Debug("Truncating data for span.")
 
 	spanAttributes := span.Attributes()
 
 	for k, v := range spanAttributes {
-		for attributeType, attributeName := range spanHttpBodyAttributesName {
-			if string(v.Key) == attributeName {
-
-				pmutils.Log.Debug("Running truncation for %+v at %+v \n", attributeType, attributeName)
-
-				data := spanAttributes[k].Value.AsString()
-
-				var jdata interface{}
-
-				err := json.Unmarshal([]byte(data), &jdata)
-				if err != nil {
-					pmutils.Log.Debug(err)
-					// Supporting only content-type=application/json
-					return
-				}
-
-				truncatedData := trimBodyValuesToTypes(jdata, 1)
-
-				jsonData, err := json.Marshal(truncatedData)
-				if err != nil {
-					pmutils.Log.Debug(err)
-				}
-
-				spanAttributes[k].Value = attribute.StringValue(string(jsonData))
-			}
+		if _, ok := attrNameTruncate[string(v.Key)]; !ok {
+			continue
 		}
+
+		data := spanAttributes[k].Value.AsString()
+
+		truncatedData, err := runTruncate(data)
+		if err != nil {
+			pmutils.Log.WithError(err).Error("Failed to run Truncation.")
+			return err
+		}
+
+		spanAttributes[k].Value = attribute.StringValue(truncatedData)
 	}
+	return nil
+}
+
+func runTruncate(data string) (string, error) {
+	var jdata interface{}
+
+	err := json.Unmarshal([]byte(data), &jdata)
+	if err != nil {
+		pmutils.Log.WithError(err).Error("Failed to umarshall data.")
+		// Supporting only content-type=application/json
+		return data, err
+	}
+
+	// 1 represents the starting level.
+	truncatedData := trimBodyValuesToTypes(jdata, 1)
+
+	jsonData, err := json.Marshal(truncatedData)
+	if err != nil {
+		pmutils.Log.WithError(err).Error("Failed to marshall data.")
+		return data, err
+	}
+
+	return string(jsonData), nil
 }
 
 func trimBodyValuesToTypes(data interface{}, currentLevel int) interface{} {

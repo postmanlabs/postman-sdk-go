@@ -2,7 +2,6 @@ package exporter
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
@@ -24,22 +23,28 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 
 	pmutils.Log.Debug("Spans to be exported are")
 
-	for idx, span := range ss {
-		defer func() {
-			if r := recover(); r != nil {
-				pmutils.Log.Debug("Issue faced while running plugins.")
-			}
-		}()
-
+	var processedSpans []tracesdk.ReadOnlySpan
+	for _, span := range ss {
 		if e.Sdkconfig.Options.TruncateData {
-			plugins.Truncate(span)
+			err := plugins.Truncate(span)
+			if err != nil {
+				pmutils.Log.WithError(err).Error("Failure in truncation.")
+				pmutils.Log.WithField("span", span).Debug("Skipping the span.")
+				continue
+			}
 		}
 
 		if e.Sdkconfig.Options.RedactSensitiveData.Enable {
-			plugins.Redact(span, e.Sdkconfig.Options.RedactSensitiveData.Rules)
+			err := plugins.Redact(span, e.Sdkconfig.Options.RedactSensitiveData.Rules)
+			if err != nil {
+				pmutils.Log.WithError(err).Error("Failure in redaction.")
+				pmutils.Log.WithField("span", span).Debug("Skipping the span.")
+				continue
+			}
 		}
 
-		pmutils.Log.Debug(fmt.Printf("Span number:%d span:%+v", idx, span))
+		processedSpans = append(processedSpans, span)
+		pmutils.Log.WithField("span attributes - ", span.Attributes()).Debug("Span - ")
 	}
-	return e.Exporter.ExportSpans(ctx, ss)
+	return e.Exporter.ExportSpans(ctx, processedSpans)
 }
