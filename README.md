@@ -46,14 +46,13 @@ For full working example see: [Gin instrumented example](https://github.com/post
 ```golang
 import (
 	pm "github.com/postmanlabs/postman-go-sdk/postmansdk"
-	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 )
 
 cleanup, err := pm.Initialize(
     "<POSTMAN-COLLECTION-ID>",
     "<POSTMAN-API-KEY>",
-    pminterfaces.WithDebug(false),
-    pminterfaces.WithEnable(true),
+    pm.WithDebug(false),
+    pm.WithEnable(true),
     // ...Other configuration options
 )
 
