@@ -1,7 +1,6 @@
 package plugins
 
 import (
-	"errors"
 	"regexp"
 
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
@@ -17,10 +16,7 @@ func Redact(span tracesdk.ReadOnlySpan, rules map[string]string) error {
 		return err
 	}
 
-	err = dr.redactData(span)
-	if err != nil {
-		return err
-	}
+	dr.redactData(span)
 	return nil
 }
 
@@ -49,15 +45,7 @@ func (dr *DataRedaction) compileRules(rules map[string]string) error {
 	return nil
 }
 
-func (dr *DataRedaction) redactData(span tracesdk.ReadOnlySpan) error {
-	var err error
-	// precautionary measure - no explicit error thrown, so handling using defer.
-	defer func() {
-		if r := recover(); r != nil {
-			err = errors.New("issue faced while running redactData")
-		}
-	}()
-
+func (dr *DataRedaction) redactData(span tracesdk.ReadOnlySpan) {
 	spanAttributes := span.Attributes()
 	for key, value := range spanAttributes {
 		if _, ok := redactAttribute[string(value.Key)]; !ok {
@@ -78,10 +66,6 @@ func (dr *DataRedaction) redactData(span tracesdk.ReadOnlySpan) error {
 			data = redactedData
 		}
 	}
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func obfuscateString(data string, regExCompiled *regexp.Regexp) string {
