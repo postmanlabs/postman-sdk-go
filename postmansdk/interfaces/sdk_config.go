@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
 )
 
@@ -87,5 +86,3 @@ func (pc *PostmanSDKConfig) IsSuppressed() bool {
 	defer pc.mu.Unlock()
 	return !pc.Options.Enable
 }
-
-

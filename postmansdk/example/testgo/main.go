@@ -14,7 +14,7 @@ func main() {
 	}
 
 	router := gin.Default()
-	psdk ,err := pm.Initialize(
+	psdk, err := pm.Initialize(
 		collectionId,
 		apiKey, pm.WithReceiverBaseUrl("REPLACE-THIS"),
 		pm.WithRedactSensitiveData(true, Rules),

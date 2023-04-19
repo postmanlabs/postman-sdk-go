@@ -5,5 +5,4 @@ const (
 	POSTMAN_SDK_ENABLE_ENV_VAR_NAME        = "POSTMAN_SDK_ENABLE"
 	POSTMAN_SDK_VERSION_ATTRIBUTE_NAME     = "postman.sdk.version"
 	POSTMAN_DATA_TRUNCATION_ATTRIBUTE_NAME = "postman.dataTruncated"
-	GIN = "GIN"
 )

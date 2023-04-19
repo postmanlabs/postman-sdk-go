@@ -3,7 +3,6 @@ package postmansdk
 import (
 	"time"
 
-	"github.com/gin-gonic/gin"
 	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
 )
 

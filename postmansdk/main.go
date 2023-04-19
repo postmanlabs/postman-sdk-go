@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 
 	"go.opentelemetry.io/otel"
@@ -28,14 +27,6 @@ type postmanSDK struct {
 
 var psdk postmanSDK
 
-type integrations struct {
-	Name []string
-}
-
-func (i *integrations) Gin(router *gin.Engine) {
-	InstrumentGin(router, psdk.Config)
-}
-
 func Initialize(
 	collectionId string,
 	apiKey string,
@@ -46,7 +37,6 @@ func Initialize(
 	psdk = postmanSDK{
 		Config: sdkconfig,
 	}
-	psdk.Integrations = integrations{Name: []string{pmutils.GIN}}
 
 	if sdkconfig.Options.Debug {
 		pmutils.CreateNewLogger(logrus.DebugLevel)
@@ -61,7 +51,7 @@ func Initialize(
 
 	// Register live collection
 	if err := pmreceiver.UpdateConfig(sdkconfig); err != nil {
-		pmutils.Log.WithError(err).Error("Postman SDK disbaled")
+		pmutils.Log.WithError(err).Error("Postman SDK disabled")
 		return psdk, err
 	}
 
