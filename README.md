@@ -17,12 +17,11 @@ import (
 
 func main() {
 	router := gin.Default()
-	cleanup, err := pm.Initialize("<POSTMAN-COLLECTION-ID>", "<POSTMAN-API-KEY>")
+	sdk, err := pm.Initialize("<POSTMAN-COLLECTION-ID>", "<POSTMAN-API-KEY>")
 
 	if err == nil {
-	    defer cleanup(context.Background())
-            // Registers postman SDK middleware
-	    pm.InstrumentGin(router)
+            // Registers a custom middleware
+	    sdk.Integrations.Gin(router)
 	}
 }
 
