@@ -21,15 +21,14 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 		return nil
 	}
 
-	pmutils.Log.Debug("Spans to be exported are")
+	pmutils.Log.Debug("Exporting spans")
 
 	var processedSpans []tracesdk.ReadOnlySpan
 	for _, span := range ss {
 		if e.Sdkconfig.Options.TruncateData {
 			err := plugins.Truncate(span)
 			if err != nil {
-				pmutils.Log.WithError(err).Error("Failure in truncation.")
-				pmutils.Log.WithField("span", span).Debug("Skipping the span.")
+				pmutils.Log.WithError(err).Error("Truncation failed, span won't be sent to backend")
 				continue
 			}
 		}
@@ -37,14 +36,12 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 		if e.Sdkconfig.Options.RedactSensitiveData.Enable {
 			err := plugins.Redact(span, e.Sdkconfig.Options.RedactSensitiveData.Rules)
 			if err != nil {
-				pmutils.Log.WithError(err).Error("Failure in redaction.")
-				pmutils.Log.WithField("span", span).Debug("Skipping the span.")
+				pmutils.Log.WithError(err).Error("Redaction Failed, span won't be sent to backend")
 				continue
 			}
 		}
 
 		processedSpans = append(processedSpans, span)
-		pmutils.Log.WithField("span attributes - ", span.Attributes()).Debug("Span - ")
 	}
 	return e.Exporter.ExportSpans(ctx, processedSpans)
 }
