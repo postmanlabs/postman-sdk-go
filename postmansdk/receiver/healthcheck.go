@@ -132,7 +132,6 @@ func UpdateConfig(pc *pminterfaces.PostmanSDKConfig) error {
 
 	if err != nil {
 		pc.Suppress()
-		pmutils.Log.WithField("error", err).Error("SDK disabled due to bootstrap failure")
 		return err
 	}
 

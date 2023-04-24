@@ -51,7 +51,7 @@ func Initialize(
 
 	// Register live collection
 	if err := pmreceiver.UpdateConfig(sdkconfig); err != nil {
-		pmutils.Log.WithError(err).Error("Postman SDK disabled")
+		pmutils.Log.WithError(err).Error("Postman SDK disabled due to bootstrap failure")
 		return psdk, err
 	}
 
@@ -61,13 +61,13 @@ func Initialize(
 
 	if err != nil {
 		pmutils.Log.WithError(err).Error("Failed to create a new exporter")
-		defer shutdown(context.Background())
+		defer shutdown(ctx)
 		return psdk, err
 	}
 
 	go pmreceiver.HealthCheck(psdk.Config)
 
-	pmutils.Log.WithField("sdkconfig", sdkconfig).Info("Postman SDK initialized")
+	pmutils.Log.Info("Postman SDK initialized")
 	return psdk, nil
 }
 
@@ -92,22 +92,23 @@ func (psdk *postmanSDK) getOTLPExporter(ctx context.Context) (*otlptrace.Exporte
 	return exporter, err
 }
 
-func (psdk *postmanSDK) installExportPipeline(
-	ctx context.Context,
-) (func(context.Context) error, error) {
-
+func (psdk *postmanSDK) getExporter(ctx context.Context) (*pmexporter.PostmanExporter, error) {
 	exporter, err := psdk.getOTLPExporter(ctx)
 
 	if err != nil {
-		return nil, fmt.Errorf("creating OTLP trace exporter: %w", err)
+		return nil, fmt.Errorf("failed to create OTLP trace exporter: %w", err)
 	}
+
 	pexporter := &pmexporter.PostmanExporter{
 		Exporter:  *exporter,
 		Sdkconfig: psdk.Config,
 	}
+	return pexporter, nil
+}
 
-	resources, err := resource.New(
-		context.Background(),
+func getResource(ctx context.Context) (*resource.Resource, error) {
+	return resource.New(
+		ctx,
 		resource.WithAttributes(
 			attribute.String("telemetry.sdk.language", "go"),
 			attribute.String(
@@ -116,13 +117,25 @@ func (psdk *postmanSDK) installExportPipeline(
 			attribute.String(pmutils.POSTMAN_SDK_VERSION_ATTRIBUTE_NAME, POSTMAN_SDK_VERSION),
 		),
 	)
+}
+
+func (psdk *postmanSDK) installExportPipeline(
+	ctx context.Context,
+) (func(context.Context) error, error) {
+
+	exporter, err := psdk.getExporter(ctx)
 	if err != nil {
-		pmutils.Log.WithError(err).Error("Could not set resources")
+		return nil, err
+	}
+
+	resources, err := getResource(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(
-			pexporter,
+			exporter,
 			sdktrace.WithBatchTimeout(
 				psdk.Config.Options.BufferIntervalInMilliseconds,
 			),

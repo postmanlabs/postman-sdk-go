@@ -98,10 +98,11 @@ func Bootstrap(sdkconfig *pminterfaces.PostmanSDKConfig) (bool, error) {
 			return resp.Body.CurrentConfig.Enabled, nil
 
 		} else if isRetryable(resp.ar.StatusCode) {
-			pmutils.Log.Debug(
+			pmutils.Log.Debug(fmt.Sprintf(
 				"Retry:%d bootstrap API received resp.status:%d",
 				retries,
 				resp.ar.StatusCode,
+			),
 			)
 			exponentialDelay(retries, BOOTSTRAP_RETRY_DELAY_SECONDS)
 
