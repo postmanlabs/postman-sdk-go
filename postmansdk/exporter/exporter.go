@@ -28,7 +28,7 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 		if e.Sdkconfig.Options.TruncateData {
 			err := plugins.Truncate(span)
 			if err != nil {
-				pmutils.Log.WithError(err).Error("Truncation failed, span won't be sent to backend")
+				pmutils.Log.WithError(err).Error("Truncation failed, span will be dropped.")
 				continue
 			}
 		}
@@ -36,7 +36,7 @@ func (e *PostmanExporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnl
 		if e.Sdkconfig.Options.RedactSensitiveData.Enable {
 			err := plugins.Redact(span, e.Sdkconfig.Options.RedactSensitiveData.Rules)
 			if err != nil {
-				pmutils.Log.WithError(err).Error("Redaction Failed, span won't be sent to backend")
+				pmutils.Log.WithError(err).Error("Redaction Failed, span will be dropped.")
 				continue
 			}
 		}
