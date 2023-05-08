@@ -3,7 +3,7 @@ package postmansdk
 import (
 	"time"
 
-	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
+	pminterfaces "github.com/postmanlabs/postman-sdk-go/postmansdk/interfaces"
 )
 
 func WithBufferIntervalInMilliseconds(bufferMillis int) pminterfaces.PostmanSDKConfigOption {

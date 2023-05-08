@@ -16,5 +16,5 @@ jobs:
    uses: postmanlabs/gh-security-scan-workflow/.github/workflows/security.yml@v1.0
    secrets: inherit
    with:
-    imagename: postman-go-sdk
+    imagename: postman-sdk-go
     language: "['go']"

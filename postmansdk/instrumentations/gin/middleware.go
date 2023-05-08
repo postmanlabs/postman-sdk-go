@@ -5,14 +5,14 @@ import (
 	"io"
 
 	"github.com/gin-gonic/gin"
-	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
-	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
+	pminterfaces "github.com/postmanlabs/postman-sdk-go/postmansdk/interfaces"
+	pmutils "github.com/postmanlabs/postman-sdk-go/postmansdk/utils"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
 func getRequestHeaders(c *gin.Context) string {
-	return jsonStringify(arrayToValue(c.Request.Header))
+	return jsonStringify(stringifyValues(c.Request.Header))
 }
 
 func getRequestParams(c *gin.Context) string {
@@ -31,7 +31,7 @@ func getRequestParams(c *gin.Context) string {
 }
 
 func getRequestQuery(c *gin.Context) string {
-	return jsonStringify(arrayToValue(c.Request.URL.Query()))
+	return jsonStringify(stringifyValues(c.Request.URL.Query()))
 }
 
 func getRequestBody(c *gin.Context) string {
@@ -57,7 +57,7 @@ func getRequestBody(c *gin.Context) string {
 }
 
 func getResponseHeaders(c *gin.Context) string {
-	return jsonStringify(arrayToValue(c.Writer.Header()))
+	return jsonStringify(stringifyValues(c.Writer.Header()))
 }
 
 func getResponseBody(c *gin.Context) *bodyLogWriter {

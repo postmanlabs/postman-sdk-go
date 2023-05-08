@@ -3,10 +3,11 @@ package instrumentations_gin
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
-	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
+	pmutils "github.com/postmanlabs/postman-sdk-go/postmansdk/utils"
 )
 
 func jsonStringify(v any) string {
@@ -40,6 +41,16 @@ func arrayToValue(h map[string][]string) map[string]string {
 
 	for k, v := range h {
 		newMap[k] = v[0]
+	}
+
+	return newMap
+}
+
+func stringifyValues(h map[string][]string) map[string]string {
+	newMap := make(map[string]string, len(h))
+
+	for k, v := range h {
+		newMap[k] = strings.Join(v, ",")
 	}
 
 	return newMap

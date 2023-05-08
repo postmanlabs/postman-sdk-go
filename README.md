@@ -5,14 +5,14 @@ This SDK instruments web frameworks to capture http requests and auto-generates 
 ## Installation Process
 
 ```
-go get github.com/postmanlabs/postman-go-sdk
+go get github.com/postmanlabs/postman-sdk-go
 ```
 
 ## Initializing the SDK
 
 ```golang
 import (
-    pm "github.com/postmanlabs/postman-go-sdk/postmansdk"
+    pm "github.com/postmanlabs/postman-sdk-go/postmansdk"
 )
 
 func main() {
@@ -27,7 +27,7 @@ func main() {
 
 ```
 
-For full working example see: [Gin instrumented example](https://github.com/postmanlabs/postman-go-sdk/tree/master/postmansdk/example/testgo)
+For full working example see: [Gin instrumented example](https://github.com/postmanlabs/postman-sdk-go/tree/master/postmansdk/example/testgo)
 
 ## Configuration
 
@@ -45,7 +45,7 @@ For full working example see: [Gin instrumented example](https://github.com/post
 
 ```golang
 import (
-	pm "github.com/postmanlabs/postman-go-sdk/postmansdk"
+	pm "github.com/postmanlabs/postman-sdk-go/postmansdk"
 )
 
 sdk, err := pm.Initialize(

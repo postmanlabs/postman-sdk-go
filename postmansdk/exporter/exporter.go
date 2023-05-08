@@ -6,9 +6,9 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 
-	plugins "github.com/postmanlabs/postman-go-sdk/postmansdk/exporter/plugins"
-	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
-	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
+	plugins "github.com/postmanlabs/postman-sdk-go/postmansdk/exporter/plugins"
+	pminterfaces "github.com/postmanlabs/postman-sdk-go/postmansdk/interfaces"
+	pmutils "github.com/postmanlabs/postman-sdk-go/postmansdk/utils"
 )
 
 type PostmanExporter struct {

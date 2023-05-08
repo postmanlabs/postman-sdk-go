@@ -7,8 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
-	instrumentations_gin "github.com/postmanlabs/postman-go-sdk/postmansdk/instrumentations/gin"
-	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
+	instrumentations_gin "github.com/postmanlabs/postman-sdk-go/postmansdk/instrumentations/gin"
+	pminterfaces "github.com/postmanlabs/postman-sdk-go/postmansdk/interfaces"
 )
 
 type integrations struct{}

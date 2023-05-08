@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
+	pmutils "github.com/postmanlabs/postman-sdk-go/postmansdk/utils"
 )
 
 const (
