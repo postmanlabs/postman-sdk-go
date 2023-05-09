@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 
-	pm "github.com/postmanlabs/postman-go-sdk/postmansdk"
+	pm "github.com/postmanlabs/postman-sdk-go/postmansdk"
 )
 
 func main() {

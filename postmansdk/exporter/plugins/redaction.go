@@ -3,7 +3,7 @@ package plugins
 import (
 	"regexp"
 
-	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
+	pmutils "github.com/postmanlabs/postman-sdk-go/postmansdk/utils"
 	"go.opentelemetry.io/otel/attribute"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 )

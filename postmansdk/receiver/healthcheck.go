@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
-	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
+	pminterfaces "github.com/postmanlabs/postman-sdk-go/postmansdk/interfaces"
+	pmutils "github.com/postmanlabs/postman-sdk-go/postmansdk/utils"
 )
 
 type hRequestBody struct {
