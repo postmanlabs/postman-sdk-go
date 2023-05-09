@@ -1,3 +1,5 @@
+![Postman](https://user-images.githubusercontent.com/117167853/230871188-0b05ff7c-8b61-401b-9d9a-4c1cb79ade88.jpg)
+
 ## About
 
 This SDK instruments web frameworks to capture http requests and auto-generates Postman Live Collections.
@@ -20,14 +22,14 @@ func main() {
 	sdk, err := pm.Initialize("<POSTMAN-COLLECTION-ID>", "<POSTMAN-API-KEY>")
 
 	if err == nil {
-            // Registers a custom middleware
+      // Registers a custom middleware
 	    sdk.Integrations.Gin(router)
 	}
 }
 
 ```
 
-For full working example see: [Gin instrumented example](https://github.com/postmanlabs/postman-sdk-go/tree/master/postmansdk/example/testgo)
+For full working example see: [Gin instrumented example](https://github.com/postmanlabs/postman-sdk-go/blob/bbba6b5060e098fb25d601077769e1084729f5fe/postmansdk/example/testgo/main.go#L16)
 
 ## Configuration
 
@@ -101,8 +103,7 @@ sdk, err := pm.Initialize(
     ```
 
 - **WithRedactSensitiveData**: Redact sensitive data such as api_keys and auth tokens, before they leave the sdk.
-
-  - **enabled** by default.
+  When this is enabled, below redaction rules are applied by default (they are not case-sensitive):
   - Default regex rules applied are
 
     ```golang
@@ -120,6 +121,12 @@ sdk, err := pm.Initialize(
             "<rule name>": "<regex to match the rule>",
             "key": `PMAT-[0-9a-z]{26}`,
         }
+    )
+
+    // To enable default redactions
+    WithRedactSensitiveData(
+        true,
+        map[string]string{}
     )
     ```
   - Type: `func(bool, map[string][string])`
