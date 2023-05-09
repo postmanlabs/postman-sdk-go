@@ -17,7 +17,7 @@ func (i *integrations) Gin(router *gin.Engine) {
 	if !psdk.Config.Options.Enable {
 		return
 	}
-	InstrumentGin(router, psdk.Config)
+	instrumentGin(router, psdk.Config)
 }
 
 // getFilters reads the ignoreIncomingRequests array and produces a otelgin.Option
@@ -56,7 +56,7 @@ func getMiddlewareOptions() []otelgin.Option {
 	return middlewareOptions
 }
 
-func InstrumentGin(router *gin.Engine, sdkconfig *pminterfaces.PostmanSDKConfig) {
+func instrumentGin(router *gin.Engine, sdkconfig *pminterfaces.PostmanSDKConfig) {
 	router.Use(otelgin.Middleware("", getMiddlewareOptions()...))
 	router.Use(instrumentations_gin.Middleware(sdkconfig))
 }
