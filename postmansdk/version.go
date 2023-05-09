@@ -1,3 +1,3 @@
 package postmansdk
 
-const POSTMAN_SDK_VERSION = "0.0.3"
+const POSTMAN_SDK_VERSION = "0.1.0"
