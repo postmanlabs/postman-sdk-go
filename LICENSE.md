@@ -1,0 +1,1 @@
+The Postman SDK for Golang is covered under [Postman EULA](https://www.postman.com/legal/terms/).

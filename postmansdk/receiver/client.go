@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	pminterfaces "github.com/postmanlabs/postman-go-sdk/postmansdk/interfaces"
+	pminterfaces "github.com/postmanlabs/postman-sdk-go/postmansdk/interfaces"
 )
 
 type SdkPayload struct {

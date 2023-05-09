@@ -3,13 +3,12 @@ package plugins
 import (
 	"regexp"
 
-	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
+	pmutils "github.com/postmanlabs/postman-sdk-go/postmansdk/utils"
 	"go.opentelemetry.io/otel/attribute"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 )
 
 func Redact(span tracesdk.ReadOnlySpan, rules map[string]string) error {
-	pmutils.Log.WithField("span", span).Debug("Running redaction for span")
 	dr := DataRedaction{ruleNameRegexMap: make(map[string]*regexp.Regexp)}
 	err := dr.compileRules(rules)
 	if err != nil {

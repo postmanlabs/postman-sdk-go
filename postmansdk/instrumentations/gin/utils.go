@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	pmutils "github.com/postmanlabs/postman-go-sdk/postmansdk/utils"
+	pmutils "github.com/postmanlabs/postman-sdk-go/postmansdk/utils"
 )
 
 func jsonStringify(v any) string {
