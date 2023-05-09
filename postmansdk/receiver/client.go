@@ -10,6 +10,7 @@ import (
 	"time"
 
 	pminterfaces "github.com/postmanlabs/postman-sdk-go/postmansdk/interfaces"
+	utils "github.com/postmanlabs/postman-sdk-go/postmansdk/utils"
 )
 
 type SdkPayload struct {
@@ -44,7 +45,8 @@ func makePostRequest(urlPath string, payload interface{}, sdkconfig *pminterface
 		return ar
 	}
 
-	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add(utils.CONTENT_TYPE, utils.APPLICATION_JSON)
+	req.Header.Add(utils.USER_AGENT, utils.SDK_USER_AGENT)
 	req.Header.Add(X_API_KEY, sdkconfig.ApiKey)
 
 	resp, err := client.Do(req)
