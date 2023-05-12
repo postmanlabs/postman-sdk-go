@@ -31,7 +31,7 @@ jobs:
 
       - name: Get current version
         id: current_version
-        uses: michmich112/extract-version@main
+        uses: postmanlabs/extract-version@main
         with:
           version-file: ./postmansdk/version.go
           schema: major.minor.build
@@ -52,7 +52,7 @@ jobs:
 
       - name: Push tag
         id: tag_version
-        uses: mathieudutour/github-tag-action@v6.0
+        uses: postmanlabs/github-tag-action@v6.0
         with:
           github_token: ${{ steps.generate_token.outputs.token }}
           custom_tag: ${{ steps.set_tag.outputs.new_tag }}
