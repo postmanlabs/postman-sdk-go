@@ -1,3 +1,6 @@
+> [!WARNING]
+> **This package is DEPRECATED! It is no longer maintained**
+
 ![Postman](https://user-images.githubusercontent.com/117167853/230871188-0b05ff7c-8b61-401b-9d9a-4c1cb79ade88.jpg)
 
 ## About
