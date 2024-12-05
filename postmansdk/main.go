@@ -1,3 +1,4 @@
+// Deprecated: This package is DEPRECATED! It is no longer maintained.
 package postmansdk
 
 import (
